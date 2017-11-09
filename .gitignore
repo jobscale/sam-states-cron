@@ -1,4 +1,7 @@
 node_modules/
 .idea/
 dist/
+log
 config/env.json
+up-pack.zip
+up-pack-prev.zip

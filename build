@@ -1,0 +1,18 @@
+#!/bin/bash -eu
+
+init() {
+    rm -fr dist
+    mkdir dist
+    ln -sf ../config/env.json dist/env.json
+}
+
+build() {
+    $(npm bin)/tsc
+}
+
+main() {
+    init
+    build
+}
+
+main

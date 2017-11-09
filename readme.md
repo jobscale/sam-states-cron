@@ -1,7 +1,12 @@
 # example
 
-> git clone https://github.com/jobscale/slim-bit.git
-> cd slim-bit
+## versions
+
+node v6.11.2
+npm 3.10.10
+
+> git clone https://github.com/jobscale/xxx.git
+> cd xxx
 
 * setup
 

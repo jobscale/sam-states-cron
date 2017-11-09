@@ -1,0 +1,29 @@
+{
+  "name": "aws-lambda",
+  "version": "1.0.0",
+  "description": "i am aws-lambda",
+  "scripts": {
+    "node": "node dist/index",
+    "zip": "test -e up-pack.zip && mv -f up-pack.zip up-pack-prev.zip ; zip -r up-pack.zip node_modules dist config",
+    "build": "/bin/bash build",
+    "debug": "node --debug-brk dist/index"
+  },
+  "devDependencies": {
+    "typescript": "^2.0.10",
+    "ts-loader": "^1.2.2",
+    "webpack": "^1.13.3",
+    "webpack-node-externals": "^1.5.4"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.141.0",
+    "cheerio-httpcli": "~0.6.9",
+    "mysql": "~2.12.0",
+    "nodemailer": "~2.7.0",
+    "q": "^1.5.1",
+    "sequelize": "~3.27.0",
+    "underscore": "^1.8.3",
+    "underscore.deferred": "^0.4.0"
+  },
+  "license": "MIT",
+  "author": "jobscale"
+}
