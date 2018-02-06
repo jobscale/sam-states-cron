@@ -1,30 +1,29 @@
 'use strict';
 
-const env = require("./env.json");
+const env = require('./env.json');
 
 import {Http} from "./services/http";
 import {Util} from "./services/util";
 
 const run = (event) => {
-    return Promise.all(event.Records.map((record) => {
-        let msg = JSON.parse(record.Sns.Message);
-        return new Promise((resolve, reject) => {
-            (new Http).request(env.url.scaleIn, msg.EC2InstanceId, 'POST', 'http', 'text/plain').then((data) => {
-                console.log('fin request');
-                resolve(data);
-            }).catch((e) => {
-                console.log('abort request');
-                resolve(e);
-            });
-        });
-    }));
+    // multipart/form-data
+    // text/plain
+    // application/json
+    // application/x-www-form-urlencoded
+    return (new Http).request(env.url.call, 'text=alarm', 'POST', 'http', 'application/x-www-form-urlencoded');
 };
 
+/**
+ * handler
+ * @param event
+ * @param context
+ * @param callback
+ */
 exports.handler = (event, context, callback) => {
 
     console.log('event', JSON.stringify(event));
 
-    let log = Util.init('Lambda AutoScaling ScaleIn');
+    let log = Util.init('Lambda Calling');
     callback(null, log);
 
     run(event).then((data) => {
@@ -42,3 +41,11 @@ exports.handler = (event, context, callback) => {
     });
 
 };
+
+(() => {
+    console.log(process.argv);
+    if (process.argv[2] !== 'test') {
+        return;
+    }
+    Util.run(exports.handler);
+})();

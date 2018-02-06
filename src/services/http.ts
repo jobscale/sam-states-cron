@@ -1,4 +1,5 @@
 'use strict';
+import {Util} from "./util";
 
 const env = require('../env.json');
 const https = require('https');
@@ -6,6 +7,13 @@ const http = require('http');
 const url = require('url');
 
 export class Http {
+
+    postError = (message) => {
+        let username = process.env.AWS_LAMBDA_FUNCTION_NAME;
+        let icon = env.icon.error;
+        let channel = env.channel.error;
+        return this.postSlack(message, username, icon, channel, true);
+    };
 
     /**
      * post slack
@@ -51,13 +59,9 @@ export class Http {
         });
     };
 
-    postError = (err) => {
-        return this.postSlack(JSON.stringify(err), 'ERROR', ':boom:');
-    };
-
     request = (requestUrl, data = {}, method = 'POST', protocol = 'https', contentType = 'application/json') => {
         let options = url.parse(requestUrl);
-        options.method = 'POST';
+        options.method = method;
         options.headers = {
             'Content-Type': contentType
         };
@@ -71,9 +75,11 @@ export class Http {
                 }
             });
             req.on('error', (e) => {
+                console.log(Util.toString(e));
                 reject(e);
             });
             req.write(data);
+            console.log('post req end');
             req.end();
         });
     };

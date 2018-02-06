@@ -11,10 +11,9 @@ export class Ami {
     /**
      * Create AMIs
      * @param {Array} instances
-     * @param {String} suffix
      * @returns {Promise.<Array>} AMIs
      */
-    createImages = (instances, suffix = 'AMI') => {
+    createImages = (instances) => {
         console.log('createImages target instances =', JSON.stringify(instances));
 
         return Promise.all(instances.map((instance) => {
@@ -27,13 +26,15 @@ export class Ami {
             let now = new Date();
             let amiName = `${name} on ${now.toDateString()} ${now.getHours()}`;
 
-            let message = `createAMI '${amiName}' ${suffix}`;
+            let message = `createAMI '${amiName}' ${process.env.AWS_REGION}`;
             let username = 'create-snapshot';
             let icon = env.icon.createAmi;
             let channel = env.channel.createAmi;
 
             console.log(message);
-            (new Http).postSlack(message, username, icon, channel);
+            (new Http).postSlack(message, username, icon, channel, true).then(() => {
+                console.log(`'${amiName}' posted slack.`);
+            });
 
             // createImage
             // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property

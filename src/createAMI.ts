@@ -5,8 +5,7 @@ const env = require('./env.json');
 import {Ami} from "./services/ami";
 import {Instance} from "./services/instance";
 import {Http} from "./services/http";
-
-const suffix = 'tokyo';
+import {Util} from "./services/util";
 
 const createAndRemoveAmi = () => {
     /**
@@ -14,7 +13,7 @@ const createAndRemoveAmi = () => {
      */
     let ami = new Ami;
     return (new Instance).listInstances([{ Name: 'tag:Backup', Values: ['yes'] }])
-        .then(instances => ami.createImages(instances, suffix))
+        .then(instances => ami.createImages(instances))
         .then(images => ami.createTags(images))
         .then(() => ami.listExpiredImages())
         .then(images => ami.deleteImages(images))
@@ -31,28 +30,22 @@ const run = (event) => {
     });
 };
 
-const postError = (message) => {
-    let username = env.name.createAmi;
-    let icon = env.icon.createAmi;
-    return (new Http).postSlack(message, username, icon, '#monitor', true);
-};
-
 exports.handler = (event, context, callback) => {
 
     console.log('event', JSON.stringify(event));
 
-    let log = 'Lambda CreateAmi action.';
+    let log = Util.init('Lambda CreateAmi');
     callback(null, log);
 
     run(event).then((data) => {
-        log = JSON.stringify(data);
+        log = Util.toString(data);
         console.log(log);
         callback(null, log);
         context.succeed(log);
     }).catch((e) => {
-        log = JSON.stringify(e);
+        log = Util.toString(e);
         console.log(log);
-        postError(log).then((data) => {
+        (new Http).postError(log).then((data) => {
             callback(e, log);
             context.fail(log);
         });

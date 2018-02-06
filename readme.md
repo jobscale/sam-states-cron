@@ -5,17 +5,33 @@
 node v6.11.2
 npm 3.10.10
 
-> git clone https://github.com/jobscale/xxx.git
-> cd xxx
+### Getting source
 
-* setup
+```bash
+$ git clone https://github.com/jobscale/xxx.git
+$ cd xxx
+```
 
-> npm install
+### Setup
 
-* build module
+```bash
+$ npm install
+```
 
-> npm run build
+### Build module
 
-* run module
+```bash
+$ npm run build
+```
 
-> npm run node
+### Upload module
+
+```bash
+$ npm run zip
+```
+
+### Run module
+
+```bash
+$ npm run node
+```

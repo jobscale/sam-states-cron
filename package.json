@@ -4,8 +4,9 @@
   "description": "i am aws-lambda",
   "scripts": {
     "node": "node dist/index",
-    "zip": "test -e up-pack.zip && mv -f up-pack.zip up-pack-prev.zip ; zip -r up-pack.zip node_modules dist config",
-    "build": "/bin/bash build",
+    "build": "rm -fr dist && mkdir dist && ln -sf ../config/env.json dist/env.json && $(npm bin)/tsc",
+    "zip": "test -e up-pack.zip && mv -f up-pack.zip prev-pack.zip ; zip -r up-pack.zip node_modules/co node_modules/lodash dist config",
+    "pack": "npm run build && npm run zip",
     "debug": "node --debug-brk dist/index"
   },
   "devDependencies": {
@@ -20,9 +21,7 @@
     "mysql": "~2.12.0",
     "nodemailer": "~2.7.0",
     "q": "^1.5.1",
-    "sequelize": "~3.27.0",
-    "underscore": "^1.8.3",
-    "underscore.deferred": "^0.4.0"
+    "sequelize": "~3.27.0"
   },
   "license": "MIT",
   "author": "jobscale"

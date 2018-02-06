@@ -2,7 +2,7 @@
 
 const env = require('../env.json');
 const client = require('cheerio-httpcli');
-const _ = require('underscore');
+const _ = require('lodash');
 
 import {Weather} from '../models/weather';
 import {Mailer} from "../services/mailer";

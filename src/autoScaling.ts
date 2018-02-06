@@ -1,7 +1,9 @@
 'use strict';
 
 const env = require("./env.json");
+
 import {Http} from "./services/http";
+import {Util} from "./services/util";
 
 const prefix = 'web';
 
@@ -23,18 +25,18 @@ exports.handler = (event, context, callback) => {
 
     console.log('event', JSON.stringify(event));
 
-    let log = 'Lambda AutoScaling action.';
+    let log = Util.init('Lambda AutoScaling');
     callback(null, log);
 
     run(event).then((data) => {
-        log = JSON.stringify(data);
+        log = Util.toString(data);
         console.log(log);
         callback(null, log);
         context.succeed(log);
-    }).catch((err) => {
-        log = JSON.stringify(err);
+    }).catch((e) => {
+        log = Util.toString(e);
         console.log(log);
-        callback(err, log);
+        callback(e, log);
         context.fail(log);
     });
 

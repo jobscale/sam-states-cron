@@ -3,6 +3,7 @@
 const env = require('./env.json');
 
 import {Http} from "./services/http";
+import {Util} from "./services/util";
 
 const joinNameValue = (json) => {
     if (!json || !json.length) {
@@ -50,16 +51,16 @@ exports.handler = (event, context, callback) => {
 
     console.log('event', JSON.stringify(event));
 
-    let log = 'Lambda Recovery action.';
+    let log = Util.init('Lambda Recovery');
     callback(null, log);
 
     run(event).then((data) => {
-        log = JSON.stringify(data);
+        log = Util.toString(data);
         console.log(log);
         callback(null, log);
         context.succeed(log);
     }).catch((e) => {
-        log = JSON.stringify(e);
+        log = Util.toString(e);
         console.log(log);
         callback(e, log);
         context.fail(log);
