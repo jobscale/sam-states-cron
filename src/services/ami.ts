@@ -2,7 +2,8 @@
 
 const env = require('../env.json');
 const AWS = require('aws-sdk');
-const Http = require('../services/http');
+
+import {Http} from './http';
 
 const ec2 = new AWS.EC2();
 
@@ -40,8 +41,8 @@ export class Ami {
             // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property
             return ec2.createImage({
                 InstanceId: instance.InstanceId,
-                NoReboot: true,
-                Tags: instance.Tags
+                Name: amiName,
+                NoReboot: true
             }).promise();
         }));
     };

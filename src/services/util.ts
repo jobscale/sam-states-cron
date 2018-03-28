@@ -3,11 +3,12 @@
 export class Util {
 
     static init = (caption) => {
-        console.log(process.env);
-        Object.assign(process.env, {
-            AWS_LAMBDA_FUNCTION_NAME: caption,
-            AWS_REGION: process.argv[1]
-        }, process.env);
+        if (!process.env.AWS_REGION) {
+            process.env.AWS_REGION = process.argv[1];
+        }
+        if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
+            process.env.AWS_LAMBDA_FUNCTION_NAME = caption;
+        }
         console.log(process.env);
         return caption;
     };

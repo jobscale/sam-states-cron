@@ -15,7 +15,7 @@ const createAndRemoveAmi = () => {
     return (new Instance).listInstances([{ Name: 'tag:Backup', Values: ['yes'] }])
         .then(instances => ami.createImages(instances))
         .then(images => ami.createTags(images))
-        .then(() => ami.listExpiredImages())
+        .then(() => ami.listExpiredImages(env.AMI.RETENTION_PERIOD))
         .then(images => ami.deleteImages(images))
         .then(mappings => ami.deleteSnapshots(mappings));
 };
