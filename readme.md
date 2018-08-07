@@ -2,8 +2,11 @@
 
 ## versions
 
-node v6.11.2
-npm 3.10.10
+npm --version
+6.1.0
+
+node --version
+v8.11.3
 
 ### Getting source
 
@@ -15,19 +18,7 @@ $ cd xxx
 ### Setup
 
 ```bash
-$ npm install
-```
-
-### Build module
-
-```bash
-$ npm run build
-```
-
-### Upload module
-
-```bash
-$ npm run zip
+$ npm i
 ```
 
 ### Run module

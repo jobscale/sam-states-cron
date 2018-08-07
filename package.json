@@ -3,17 +3,9 @@
   "version": "1.0.0",
   "description": "i am aws-lambda",
   "scripts": {
-    "node": "node dist/index",
-    "build": "rm -fr dist && mkdir dist && ln -sf ../config/env.json dist/env.json && $(npm bin)/tsc",
-    "zip": "test -e up-pack.zip && mv -f up-pack.zip prev-pack.zip ; zip -r up-pack.zip node_modules/co node_modules/lodash dist config",
-    "pack": "npm run build && npm run zip",
-    "debug": "node --debug-brk dist/index"
-  },
-  "devDependencies": {
-    "typescript": "^2.0.10",
-    "ts-loader": "^1.2.2",
-    "webpack": "^1.13.3",
-    "webpack-node-externals": "^1.5.4"
+    "start": "node dist/index",
+    "inspect": "node --debug-brk dist/index",
+    "lint": "eslint src/*.js src/**/*.js"
   },
   "dependencies": {
     "aws-sdk": "^2.141.0",
@@ -22,6 +14,11 @@
     "nodemailer": "~2.7.0",
     "q": "^1.5.1",
     "sequelize": "~3.27.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.3.0",
+    "eslint-config-airbnb-base": "^13.0.0",
+    "eslint-plugin-import": "^2.13.0"
   },
   "license": "MIT",
   "author": "jobscale"
