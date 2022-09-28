@@ -11,7 +11,7 @@ class Ami {
     return Promise.all(instances.map((instance) => {
       const name = instance.Tags.some((tag) => tag.Key === 'Name') ? instance.Tags.find((tag) => tag.Key === 'Name').Value : instance.InstanceId;
       const now = new Date();
-      const amiName = `${name} on ${now.toDateString()} ${now.getHours()}`;
+      const amiName = `${name} on ${now.toISOString()}`;
       // createImage
       // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property
       return ec2.createImage({
