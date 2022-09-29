@@ -1,9 +1,12 @@
-node_modules/
+.vscode/
 .idea/
-dist/
-log
-config/env.json
-up-pack.zip
-up-pack-prev.zip
-prev-pack.zip
+logs/
+config/
 package-lock.json
+
+# package directories
+node_modules/
+jspm_packages
+
+# Serverless directories
+.serverless

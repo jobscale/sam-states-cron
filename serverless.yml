@@ -1,0 +1,38 @@
+service: app
+frameworkVersion: '3'
+
+custom:
+  env: develop
+  develop:
+    region: ap-northeast-1
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  memorySize: 128
+  timeout: 15
+  stage: develop
+  region: ap-northeast-1
+
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "ec2:describe*"
+            - "ec2:createImages*"
+            - "ec2:createTags*"
+          Resource: "*"
+
+  environment:
+    NODE_ENV: ${self.custom.env}
+
+package:
+  patterns:
+    - '!package*.json'
+    - '!event*.json'
+    - '!test/**'
+
+functions:
+  create-ami:
+    handler: index.handler
