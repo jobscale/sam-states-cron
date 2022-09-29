@@ -1,12 +1,12 @@
-const _ = require('lodash');
 const AWS = require('aws-sdk');
 
-const env = {};
+const { env, _ } = process;
 const EC2_NAMESPACE = 'AWS/EC2';
 const INSTANCE_ID_DIM = 'InstanceId';
 const REPEAT_PREVIOUS = '...';
 const NAME_TAG = 'Name';
 const METRIC_WIDGET_TYPE = 'metric';
+
 class Dashboard {
   getDashboards() {
     const dashboardDef = JSON.parse(env.AWS_DASHBOARDS);
@@ -102,6 +102,7 @@ class Dashboard {
     }
   }
 }
+
 module.exports = {
   Dashboard,
 };

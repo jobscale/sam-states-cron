@@ -1,24 +1,55 @@
 const AWS = require('aws-sdk');
+const { logger } = require('@jobscale/logger');
 
 const ec2 = new AWS.EC2();
 class Ami {
+  /**
+   * List EC2 instances
+   * @return {Promise.<Array>} instances
+   */
+  listInstances(filters = [{ Name: 'tag:Backup', Values: ['yes'] }]) {
+    const params = {
+      Filters: filters,
+    };
+    // describeInstances
+    // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeInstances-property
+    return ec2.describeInstances(params).promise()
+    .then(data => {
+      return data.Reservations
+      .map(reservation => {
+        return reservation.Instances.map(instance => ({
+          InstanceId: instance.InstanceId,
+          Tags: instance.Tags,
+        }));
+      })
+      .reduce((previousValue, currentValue) => previousValue.concat(currentValue));
+    });
+  }
+
   /**
    * Create AMIs
    * @param {Array} instances
    * @returns {Promise.<Array>} AMIs
    */
   createImages(instances) {
-    return Promise.all(instances.map((instance) => {
-      const name = instance.Tags.some((tag) => tag.Key === 'Name') ? instance.Tags.find((tag) => tag.Key === 'Name').Value : instance.InstanceId;
-      const now = new Date();
-      const amiName = `${name} on ${now.toISOString()}`;
-      // createImage
-      // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property
-      return ec2.createImage({
+    logger.info('createImages', JSON.stringify(instances.map(instance => instance.InstanceId), null, 2));
+    const now = new Date();
+    return Promise.all(instances.map(instance => {
+      const name = instance.Tags.some(tag => tag.Key === 'Name')
+        ? instance.Tags.find(tag => tag.Key === 'Name').Value
+        : instance.InstanceId;
+      const amiName = `${name} on ${now.toISOString()}`.split(/[:.]/g, ' ');
+      const params = {
         InstanceId: instance.InstanceId,
         Name: amiName,
         NoReboot: true,
-      }).promise();
+      };
+      // createImage
+      // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property
+      return ec2.createImage(params).promise()
+      .then(image => {
+        this.createTags({ ...image, name });
+      });
     }));
   }
 
@@ -27,16 +58,17 @@ class Ami {
    * @param {Array} images - AMIs
    * @returns {Promise.<Array>} null
    */
-  createTags(images) {
-    // createTags
-    // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createTags-property
-    return Promise.all(images.map(image => ec2.createTags({
+  createTags(image) {
+    const params = {
       Resources: [image.ImageId],
       Tags: [
-        { Key: 'Name', Value: image.ImageId },
+        { Key: 'Name', Value: image.name },
         { Key: 'Delete', Value: 'yes' },
       ],
-    }).promise()));
+    };
+    // createTags
+    // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createTags-property
+    return ec2.createTags(params).promise();
   }
 
   /**
@@ -44,25 +76,28 @@ class Ami {
    * @return {Promise.<Array>} AMIs
    */
   listExpiredImages(retentionPeriod = 1) {
-    // describeImages
-    // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeImages-property
-    return ec2.describeImages({
+    const params = {
       Owners: ['self'],
       Filters: [{ Name: 'tag:Delete', Values: ['yes'] }],
-    }).promise()
-    .then((data) => data.Images
-    .filter((image) => {
-      const creationDate = new Date(image.CreationDate);
-      const expirationDate = new Date(Date.now() - (86400000 * retentionPeriod));
-      return creationDate < expirationDate;
+    };
+    // describeImages
+    // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeImages-property
+    return ec2.describeImages(params).promise()
+    .then(({ Images }) => {
+      // filter expired
+      const DAY = 86400000;
+      const expirationDate = new Date(Date.now() - (retentionPeriod * DAY));
+      return Images.filter(image => new Date(image.CreationDate) < expirationDate);
     })
-    .map(image => ({
-      ImageId: image.ImageId,
-      CreationDate: image.CreationDate,
-      BlockDeviceMappings: image.BlockDeviceMappings.map(mapping => ({
-        Ebs: { SnapshotId: mapping.Ebs.SnapshotId },
-      })),
-    })));
+    .then(expired => {
+      return expired.map(image => ({
+        ImageId: image.ImageId,
+        CreationDate: image.CreationDate,
+        BlockDeviceMappings: image.BlockDeviceMappings.map(mapping => ({
+          Ebs: { SnapshotId: mapping.Ebs.SnapshotId },
+        })),
+      }));
+    });
   }
 
   /**
@@ -73,12 +108,15 @@ class Ami {
   deleteImages(images) {
     // deregisterImage
     // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeImages-property
-    return Promise.all(images.map(image => ec2.deregisterImage({
-      ImageId: image.ImageId,
-    }).promise()))
-    .then(() => images.length === 0 ? images : images
-    .map(image => image.BlockDeviceMappings)
-    .reduce((previousValue, currentValue) => previousValue.concat(currentValue)));
+    return Promise.all(images.map(image => {
+      return ec2.deregisterImage({
+        ImageId: image.ImageId,
+      }).promise();
+    }))
+    .then(() => {
+      return images.map(image => image.BlockDeviceMappings)
+      .reduce((previousValue, currentValue) => previousValue.concat(currentValue));
+    });
   }
 
   /**
@@ -87,13 +125,17 @@ class Ami {
    * @returns {Promise.<Array>} null
    */
   deleteSnapshots(mappings) {
-    // deleteSnapshot
-    // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#deleteSnapshot-property
-    return Promise.all(mappings.map(mapping => ec2.deleteSnapshot({
-      SnapshotId: mapping.Ebs.SnapshotId,
-    }).promise()));
+    return Promise.all(mappings.map(({ Ebs }) => {
+      const params = {
+        SnapshotId: Ebs.SnapshotId,
+      };
+      // deleteSnapshot
+      // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#deleteSnapshot-property
+      return ec2.deleteSnapshot(params).promise();
+    }));
   }
 }
+
 module.exports = {
   Ami,
 };

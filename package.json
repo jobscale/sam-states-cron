@@ -2,20 +2,19 @@
   "name": "aws-lambda",
   "version": "1.0.0",
   "description": "i am aws-lambda",
+  "license": "MIT",
+  "author": "jobscale",
   "scripts": {
-    "start": "node dist/index",
-    "inspect": "node --debug-brk dist/index",
-    "lint": "eslint app/*.js app/**/*.js"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "aws-sdk": "^2.141.0",
-    "lodash": "^4.17.10"
+    "@jobscale/logger": "^0.0.7",
+    "dayjs": "^1.11.5"
   },
   "devDependencies": {
-    "eslint": "^5.3.0",
-    "eslint-config-airbnb-base": "^13.0.0",
-    "eslint-plugin-import": "^2.13.0"
-  },
-  "license": "MIT",
-  "author": "jobscale"
+    "eslint": "^8.24.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0"
+  }
 }
