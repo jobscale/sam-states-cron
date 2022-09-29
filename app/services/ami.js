@@ -1,4 +1,5 @@
 const AWS = require('aws-sdk');
+const dayjs = require('dayjs');
 const { logger } = require('@jobscale/logger');
 
 const ec2 = new AWS.EC2();
@@ -75,7 +76,7 @@ class Ami {
    * List expired AMIs
    * @return {Promise.<Array>} AMIs
    */
-  listExpiredImages(retentionPeriod = 1) {
+  listExpiredImages(retentionPeriod = 3) {
     const params = {
       Owners: ['self'],
       Filters: [{ Name: 'tag:Delete', Values: ['yes'] }],
@@ -85,9 +86,8 @@ class Ami {
     return ec2.describeImages(params).promise()
     .then(({ Images }) => {
       // filter expired
-      const DAY = 86400000;
-      const expirationDate = new Date(Date.now() - (retentionPeriod * DAY));
-      return Images.filter(image => new Date(image.CreationDate) < expirationDate);
+      const expirationDate = dayjs().subtract(retentionPeriod, 'days');
+      return Images.filter(image => dayjs(image.CreationDate) < expirationDate);
     })
     .then(expired => {
       return expired.map(image => ({

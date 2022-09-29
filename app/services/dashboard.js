@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
 
-const { env, _ } = process;
+const { env, cloudwatchClient, _ } = process;
 const EC2_NAMESPACE = 'AWS/EC2';
 const INSTANCE_ID_DIM = 'InstanceId';
 const REPEAT_PREVIOUS = '...';
@@ -8,21 +8,22 @@ const NAME_TAG = 'Name';
 const METRIC_WIDGET_TYPE = 'metric';
 
 class Dashboard {
+  async parse(text) {
+    return JSON.parse(text);
+  }
+
   getDashboards() {
-    const dashboardDef = JSON.parse(env.AWS_DASHBOARDS);
-    let dashboards;
-    if (!dashboardDef) {
-      throw new Error('Environment variable AWS_DASHBOARDS is not set. It should be set with JSON array, e.g [{"dashboardName": "myDashboard"}]');
-    }
-    try {
-      dashboards = JSON.parse(dashboardDef);
-    } catch (err) {
-      throw new Error('Error, AWS_DASHBOARDS is not valid JSON');
-    }
-    if (!Array.isArray(dashboards)) {
-      throw new Error('Expecting AWS_DASHBOARDS to be an array');
-    }
-    return dashboards;
+    return this.parse(env.CW_DASHBOARDS)
+    .catch(e => {
+      e.message += '\nError, CW_DASHBOARDS is not valid JSON';
+      throw e;
+    })
+    .then(dashboards => {
+      if (!Array.isArray(dashboards)) {
+        throw new Error('Environment variable CW_DASHBOARDS is not set. It should be set with JSON array, e.g [{"dashboardName": "myDashboard"}]');
+      }
+      return dashboards;
+    });
   }
 
   ec2MetricsFromDescribeInstances(ec2DescribeInstances, metricName) {
@@ -44,8 +45,8 @@ class Dashboard {
       return idAndLabel;
     })
     .sortBy(['label'])
-    .map((idAndLabel, i) => {
-      const metric = i === 0
+    .map((idAndLabel, index) => {
+      const metric = index === 0
         ? [EC2_NAMESPACE, metricName, INSTANCE_ID_DIM, idAndLabel.id]
         : [REPEAT_PREVIOUS, idAndLabel.id];
       if (idAndLabel.id !== idAndLabel.label) {
@@ -77,8 +78,9 @@ class Dashboard {
     return this.ec2MetricsFromDescribeInstances(ec2DescribeInstances, metricName);
   }
 
-  async updateDashboard(cloudwatchClient, dashboardContext, dashboardBody) {
-    const newDashboard = _.cloneDeep(dashboardBody);
+  async updateDashboard(dashboardContext, dashboardBody) {
+    const existDashboard = JSON.stringify(dashboardBody);
+    const newDashboard = JSON.parse(existDashboard);
     const { widgets } = newDashboard;
     const { dashboardName } = dashboardContext.dashboard;
     for (let i = 0; i < widgets.length; i++) {
@@ -86,14 +88,18 @@ class Dashboard {
       const { metrics } = widget.properties;
       const { region } = widget;
       // Check to see if it's a metric widget and first metric is an EC2 Instance metric
-      if (widget.type === METRIC_WIDGET_TYPE && metrics
+      const isInstanceMetric = widget.type === METRIC_WIDGET_TYPE
+      && metrics.length
       && (metrics[0].length === 4 || metrics[0].length === 5)
-      && metrics[0][0] === EC2_NAMESPACE && metrics[0][2] === INSTANCE_ID_DIM) {
-        widget.properties.metrics = await this
-        .getEC2Metrics(dashboardContext, region, metrics[0][1]);
+      && metrics[0][0] === EC2_NAMESPACE && metrics[0][2] === INSTANCE_ID_DIM;
+      if (!isInstanceMetric) {
+        return;
       }
+      widget.properties.metrics = await this.getEC2Metrics(...[
+        dashboardContext, region, metrics[0][1],
+      ]);
     }
-    if (JSON.stringify(dashboardBody) !== JSON.stringify(newDashboard)) {
+    if (existDashboard !== JSON.stringify(newDashboard)) {
       // Save updated dashboard
       await cloudwatchClient.putDashboard({
         DashboardName: dashboardName,

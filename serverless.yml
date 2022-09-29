@@ -26,6 +26,7 @@ provider:
 
   environment:
     NODE_ENV: ${self.custom.env}
+    AMI_RETENTION_PERIOD: 3
 
 package:
   patterns:
