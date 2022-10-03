@@ -8,6 +8,8 @@
 
 ```
 curl https://inet-ip.info/ip
+curl https://ipinfo.io/ip
+curl https://ifconfig.io/ip
 ```
 
 VPC の CIDR を確認する
