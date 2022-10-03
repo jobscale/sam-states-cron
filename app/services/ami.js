@@ -39,7 +39,7 @@ class Ami {
       const name = instance.Tags.some(tag => tag.Key === 'Name')
         ? instance.Tags.find(tag => tag.Key === 'Name').Value
         : instance.InstanceId;
-      const amiName = `${name} on ${now.toISOString()}`.split(/[:.]/g, ' ');
+      const amiName = `${name} on ${now.toISOString()}`.replace(/[:.]/g, ' ');
       const params = {
         InstanceId: instance.InstanceId,
         Name: amiName,
@@ -48,9 +48,7 @@ class Ami {
       // createImage
       // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property
       return ec2.createImage(params).promise()
-      .then(image => {
-        this.createTags({ ...image, name });
-      });
+      .then(image => this.createTags({ ...image, name }));
     }));
   }
 
@@ -101,21 +99,22 @@ class Ami {
   }
 
   /**
-   * Delete AMIs
+   * Deregister AMIs
    * @param {Array} images - AMIs
    * @returns {Promise.<Array>} block device mappings
    */
-  deleteImages(images) {
-    // deregisterImage
-    // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeImages-property
+  deregisterImages(images) {
+    logger.info('deregisterImage', images);
     return Promise.all(images.map(image => {
-      return ec2.deregisterImage({
+      const params = {
         ImageId: image.ImageId,
-      }).promise();
+      };
+      // deregisterImage
+      // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeImages-property
+      return ec2.deregisterImage(params).promise();
     }))
     .then(() => {
-      return images.map(image => image.BlockDeviceMappings)
-      .reduce((previousValue, currentValue) => previousValue.concat(currentValue));
+      return images.map(image => image.BlockDeviceMappings);
     });
   }
 
@@ -125,6 +124,7 @@ class Ami {
    * @returns {Promise.<Array>} null
    */
   deleteSnapshots(mappings) {
+    logger.info('deleteSnapshot', mappings);
     return Promise.all(mappings.map(({ Ebs }) => {
       const params = {
         SnapshotId: Ebs.SnapshotId,

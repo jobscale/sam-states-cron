@@ -1,5 +1,5 @@
 const { logger } = require('@jobscale/logger');
-const { createAndRemoveAmi } = require('app');
+const { createAndRemoveAmi } = require('./app');
 
 exports.handler = async event => {
   logger.info('EVENT', JSON.stringify(event, null, 2));

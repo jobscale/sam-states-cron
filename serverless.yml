@@ -10,7 +10,7 @@ provider:
   name: aws
   runtime: nodejs16.x
   memorySize: 128
-  timeout: 15
+  timeout: 300
   stage: develop
   region: ap-northeast-1
 
@@ -19,14 +19,17 @@ provider:
       statements:
         - Effect: "Allow"
           Action:
-            - "ec2:describe*"
-            - "ec2:createImages*"
-            - "ec2:createTags*"
+            - "ec2:describeInstances"
+            - "ec2:createImage"
+            - "ec2:createTags"
+            - "ec2:describeImages"
+            - "ec2:deregisterImage"
+            - "ec2:deleteSnapshot"
           Resource: "*"
 
   environment:
     NODE_ENV: ${self.custom.env}
-    AMI_RETENTION_PERIOD: 3
+    AMI_RETENTION_PERIOD: 2
 
 package:
   patterns:
@@ -37,3 +40,7 @@ package:
 functions:
   create-ami:
     handler: index.handler
+    events:
+      - schedule:
+          rate: cron(50 19 * * ? *)
+          name: develop-create-ami
