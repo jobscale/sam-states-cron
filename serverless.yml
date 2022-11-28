@@ -36,6 +36,7 @@ package:
     - '!package*.json'
     - '!event*.json'
     - '!test/**'
+    - '!docs/**'
 
 functions:
   create-ami:

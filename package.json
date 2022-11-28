@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@jobscale/logger": "^0.0.7",
+    "aws-sdk": "^2.1262.0",
     "dayjs": "^1.11.5"
   },
   "devDependencies": {
