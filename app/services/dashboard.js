@@ -1,4 +1,6 @@
-const AWS = require('aws-sdk');
+const {
+  EC2
+} = require("@aws-sdk/client-ec2");
 
 const { env, cloudwatchClient, _ } = process;
 const EC2_NAMESPACE = 'AWS/EC2';
@@ -71,8 +73,8 @@ class Dashboard {
     }
     if (!ec2DescribeInstances) {
       // Not in cache, call EC2 to get list of regions
-      const ec2Client = new AWS.EC2({ region });
-      ec2DescribeInstances = await ec2Client.describeInstances(params).promise();
+      const ec2Client = new EC2({ region });
+      ec2DescribeInstances = await ec2Client.describeInstances(params);
       context.ec2Cache[region] = ec2DescribeInstances;
     }
     return this.ec2MetricsFromDescribeInstances(ec2DescribeInstances, metricName);

@@ -1,8 +1,10 @@
-const AWS = require('aws-sdk');
+const {
+  EC2
+} = require("@aws-sdk/client-ec2");
 const dayjs = require('dayjs');
 const { logger } = require('@jobscale/logger');
 
-const ec2 = new AWS.EC2();
+const ec2 = new EC2();
 class Ami {
   /**
    * List EC2 instances
@@ -14,7 +16,7 @@ class Ami {
     };
     // describeInstances
     // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeInstances-property
-    return ec2.describeInstances(params).promise()
+    return ec2.describeInstances(params)
     .then(data => {
       if (!data.Reservations.length) return [];
       return data.Reservations
@@ -51,7 +53,7 @@ class Ami {
       return Promise.all(images.map(([name, params]) => {
         // createImage
         // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property
-        return ec2.createImage(params).promise()
+        return ec2.createImage(params)
         .then(image => this.createTags({ ...image, name }));
       }));
     });
@@ -72,7 +74,7 @@ class Ami {
     };
     // createTags
     // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createTags-property
-    return ec2.createTags(params).promise();
+    return ec2.createTags();
   }
 
   /**
@@ -86,7 +88,7 @@ class Ami {
     };
     // describeImages
     // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeImages-property
-    return ec2.describeImages(params).promise()
+    return ec2.describeImages(params)
     .then(({ Images }) => {
       // filter expired
       const expirationDate = dayjs().subtract(retentionPeriod, 'days');
@@ -118,7 +120,7 @@ class Ami {
       };
       // deregisterImage
       // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeImages-property
-      return ec2.deregisterImage(params).promise();
+      return ec2.deregisterImage();
     }))
     .then(() => {
       return images.map(image => image.BlockDeviceMappings).flat();
@@ -139,7 +141,7 @@ class Ami {
       };
       // deleteSnapshot
       // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#deleteSnapshot-property
-      return ec2.deleteSnapshot(params).promise()
+      return ec2.deleteSnapshot(params)
       .then(() => params);
     }));
   }
