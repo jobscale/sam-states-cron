@@ -16,6 +16,7 @@ class Ami {
     // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeInstances-property
     return ec2.describeInstances(params).promise()
     .then(data => {
+      if (!data.Reservations.length) return [];
       return data.Reservations
       .map(reservation => {
         return reservation.Instances.map(instance => ({
