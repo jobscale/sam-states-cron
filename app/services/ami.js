@@ -34,23 +34,27 @@ class Ami {
    * @returns {Promise.<Array>} AMIs
    */
   createImages(instances) {
-    logger.info('createImages', JSON.stringify(instances.map(instance => instance.InstanceId), null, 2));
     const now = new Date();
     return Promise.all(instances.map(instance => {
       const name = instance.Tags.some(tag => tag.Key === 'Name')
         ? instance.Tags.find(tag => tag.Key === 'Name').Value
         : instance.InstanceId;
       const amiName = `${name} on ${now.toISOString()}`.replace(/[:.]/g, ' ');
-      const params = {
+      return [name, {
         InstanceId: instance.InstanceId,
         Name: amiName,
         NoReboot: true,
-      };
-      // createImage
-      // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property
-      return ec2.createImage(params).promise()
-      .then(image => this.createTags({ ...image, name }));
-    }));
+      }];
+    }))
+    .then(images => {
+      logger.info('createImages', JSON.stringify(images, null, 2));
+      return Promise.all(images.map(([name, params]) => {
+        // createImage
+        // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property
+        return ec2.createImage(params).promise()
+        .then(image => this.createTags({ ...image, name }));
+      }));
+    });
   }
 
   /**
@@ -92,7 +96,9 @@ class Ami {
       return expired.map(image => ({
         ImageId: image.ImageId,
         CreationDate: image.CreationDate,
-        BlockDeviceMappings: image.BlockDeviceMappings.map(mapping => ({
+        BlockDeviceMappings: image.BlockDeviceMappings
+        .filter(mapping => mapping.Ebs)
+        .map(mapping => ({
           Ebs: { SnapshotId: mapping.Ebs.SnapshotId },
         })),
       }));
@@ -105,7 +111,7 @@ class Ami {
    * @returns {Promise.<Array>} block device mappings
    */
   deregisterImages(images) {
-    logger.info('deregisterImage', images);
+    logger.info('deregisterImage', JSON.stringify(images, null, 2));
     return Promise.all(images.map(image => {
       const params = {
         ImageId: image.ImageId,
@@ -115,7 +121,7 @@ class Ami {
       return ec2.deregisterImage(params).promise();
     }))
     .then(() => {
-      return images.map(image => image.BlockDeviceMappings);
+      return images.map(image => image.BlockDeviceMappings).flat();
     });
   }
 
@@ -125,14 +131,16 @@ class Ami {
    * @returns {Promise.<Array>} null
    */
   deleteSnapshots(mappings) {
-    logger.info('deleteSnapshot', mappings);
+    logger.info('deleteSnapshot', JSON.stringify(mappings, null, 2));
     return Promise.all(mappings.map(({ Ebs }) => {
+      if (!Ebs.SnapshotId) return undefined;
       const params = {
         SnapshotId: Ebs.SnapshotId,
       };
       // deleteSnapshot
       // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#deleteSnapshot-property
-      return ec2.deleteSnapshot(params).promise();
+      return ec2.deleteSnapshot(params).promise()
+      .then(() => params);
     }));
   }
 }
