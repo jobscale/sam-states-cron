@@ -1,6 +1,4 @@
-const {
-  EC2
-} = require("@aws-sdk/client-ec2");
+const { EC2 } = require('@aws-sdk/client-ec2');
 const dayjs = require('dayjs');
 const { logger } = require('@jobscale/logger');
 
@@ -74,7 +72,7 @@ class Ami {
     };
     // createTags
     // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createTags-property
-    return ec2.createTags();
+    return ec2.createTags(params);
   }
 
   /**
@@ -120,7 +118,7 @@ class Ami {
       };
       // deregisterImage
       // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeImages-property
-      return ec2.deregisterImage();
+      return ec2.deregisterImage(params);
     }))
     .then(() => {
       return images.map(image => image.BlockDeviceMappings).flat();

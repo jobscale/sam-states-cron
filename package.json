@@ -5,8 +5,7 @@
   "license": "MIT",
   "author": "jobscale",
   "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint": "eslint . --fix"
   },
   "dependencies": {
     "@jobscale/logger": "^0.0.7",

@@ -1,6 +1,4 @@
-const {
-  EC2
-} = require("@aws-sdk/client-ec2");
+const { EC2 } = require('@aws-sdk/client-ec2');
 
 const { env, cloudwatchClient, _ } = process;
 const EC2_NAMESPACE = 'AWS/EC2';
