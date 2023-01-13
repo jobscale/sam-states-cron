@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample SAM Template for triggering AWS Step Functions state machines via scheduled CloudWatch events.
+
+Parameters:
+  Env:
+    Type: String
+    Default: develop
+    AllowedValues:
+      - develop
+      - staging
+
+Resources:
+  Function1:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-listGroups
+      CodeUri: app/listGroups/
+      Handler: index.handler
+      Timeout: 10
+      Runtime: nodejs18.x
+      Policies:
+      - AWSLambdaExecute
+      - Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:*
+            Resource: '*'
+
+  Function2:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-exportGroup
+      CodeUri: app/exportGroup/
+      Handler: index.handler
+      Timeout: 10
+      Runtime: nodejs18.x
+      Policies:
+      - AWSLambdaExecute
+      - Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:*
+            Resource: '*'
+
+  StateMachineIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                  - Fn::Sub: "states.${AWS::Region}.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "lambda:InvokeFunction"
+                Resource:
+                  - !GetAtt Function1.Arn
+                  - !GetAtt Function2.Arn
+
+  StateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub "${AWS::StackName}-StateMachine"
+      RoleArn: !GetAtt StateMachineIAMRole.Arn
+      # DefinitionUri: stateMachine/definition.json
+      DefinitionString: |
+        {
+          "StartAt": "List Log Group",
+          "States": {
+            "List Log Group": {
+              "Type": "Task",
+              "Resource": "${Function1Arn}",
+              "ResultPath": "$.relation",
+              "Next": "Export Log Step"
+            },
+            "Wait for Check": {
+              "Type": "Wait",
+              "Seconds": 10,
+              "Next": "Export Log Step"
+            },
+            "Export Log Step": {
+              "Type": "Task",
+              "Resource": "${Function2Arn}",
+              "ResultPath": "$.relation",
+              "Next": "Check Status"
+            },
+            "Check Status": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.relation.statusText",
+                  "StringEquals": "RUNNING",
+                  "Next": "Wait for Check"
+                },
+                {
+                  "Variable": "$.relation.statusText",
+                  "StringEquals": "COMPLETED",
+                  "Next": "Export Log Step"
+                },
+                {
+                  "Variable": "$.relation.statusText",
+                  "StringEquals": "FAILED",
+                  "Next": "Failed"
+                },
+                {
+                  "Variable": "$.relation.statusText",
+                  "StringEquals": "SUCCEEDED",
+                  "Next": "Succeed"
+                }
+              ],
+              "Default": "Failed"
+            },
+            "Failed": {
+              "Type": "Fail",
+              "Cause": "Step Daily Status Failed",
+              "Error": "Step Daily Status FAILED"
+            },
+            "Succeed": {
+              "Type": "Succeed"
+            }
+          }
+        }
+      DefinitionSubstitutions:
+        Function1Arn: !GetAtt Function1.Arn
+        Function2Arn: !GetAtt Function2.Arn
+
+  ScheduledEventIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                  - Fn::Sub: "events.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: StateMachineExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "states:StartExecution"
+                Resource:
+                  - !Ref StateMachine
+
+  ScheduledEventRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: "Scheduled event to trigger Step Functions state machine"
+      ScheduleExpression: cron(9 17 * * ? *)
+      State: "ENABLED"
+      Targets:
+        -
+          Arn: !Ref StateMachine
+          Id: !GetAtt StateMachine.Name
+          RoleArn: !GetAtt ScheduledEventIAMRole.Arn

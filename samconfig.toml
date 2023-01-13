@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "sam-states-cron"
+s3_bucket = "sam-states-cron"
+s3_prefix = "sam-states-cron"
+region = "ap-northeast-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "StageName=\"v1\" Env=\"develop\""
+image_repositories = []

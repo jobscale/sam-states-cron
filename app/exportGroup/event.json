@@ -1,0 +1,10 @@
+{
+  "relation": {
+    "ts": "2023-01-12T12:29:02.596+0900",
+    "statusText": "SUCCEEDED",
+    "list": [
+      "/apigateway/web-accessLog",
+      "/aws/lambda/sam-states-cron-exportGroup"
+    ]
+  }
+}

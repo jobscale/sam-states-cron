@@ -1,0 +1,56 @@
+{
+  "StartAt": "List Log Group",
+  "States": {
+    "List Log Group": {
+      "Type": "Task",
+      "Resource": "${Function1Arn}",
+      "ResultPath": "$.relation",
+      "Next": "Export Log Step"
+    },
+    "Wait for Check": {
+      "Type": "Wait",
+      "Seconds": 10,
+      "Next": "Export Log Step"
+    },
+    "Export Log Step": {
+      "Type": "Task",
+      "Resource": "${Function2Arn}",
+      "ResultPath": "$.relation",
+      "Next": "Check Status"
+    },
+    "Check Status": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.relation.statusText",
+          "StringEquals": "RUNNING",
+          "Next": "Wait for Check"
+        },
+        {
+          "Variable": "$.relation.statusText",
+          "StringEquals": "COMPLETED",
+          "Next": "Export Log Step"
+        },
+        {
+          "Variable": "$.relation.statusText",
+          "StringEquals": "FAILED",
+          "Next": "Failed"
+        },
+        {
+          "Variable": "$.relation.statusText",
+          "StringEquals": "SUCCEEDED",
+          "Next": "Succeed"
+        }
+      ],
+      "Default": "Failed"
+    },
+    "Failed": {
+      "Type": "Fail",
+      "Cause": "Step Daily Status Failed",
+      "Error": "Step Daily Status FAILED"
+    },
+    "Succeed": {
+      "Type": "Succeed"
+    }
+  }
+}
