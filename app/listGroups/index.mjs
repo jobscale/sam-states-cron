@@ -31,13 +31,17 @@ export const handler = async event => {
   logger.info('EVENT', JSON.stringify(event, null, 2));
   const result = await listGroups({ limit: 50 })
   .then(relation => {
+    const from = dayjs(event.time).subtract(1, 'days').startOf('day').toISOString().replace('Z', '+0900');
+    const to = dayjs(from).add(1, 'days').add(9, 'hours').toISOString().replace('Z', '+0900');
     return {
+      from,
+      to,
       ...relation,
       ts: dayjs().add(9, 'hours').toISOString().replace('Z', '+0900'),
     };
   })
   .catch(e => {
-    logger.error(e.message);
+    logger.error(e);
     return {
       ts: dayjs().add(9, 'hours').toISOString().replace('Z', '+0900'),
       statusText: 'FAILED',

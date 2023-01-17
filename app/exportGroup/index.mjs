@@ -16,6 +16,7 @@ const describeTask = async relation => {
     return {
       ...relation,
       statusText,
+      completed: (parseInt(relation.completed, 10) || 0) + (statusText === 'COMPLETED' ? 1 : 0),
     };
   });
 };
@@ -23,31 +24,55 @@ const describeTask = async relation => {
 const createTask = async relation => {
   if (!relation.list.length) {
     return {
+      ...relation,
       statusText: 'SUCCEEDED',
     };
   }
-  const logGroupName = relation.list.shift();
-  const start = dayjs().subtract(1, 'days').startOf('day').toISOString().replace('Z', '+0900');
-  const from = dayjs(start).valueOf();
-  const to = dayjs(from).add(1, 'days').valueOf();
-  const [date] = dayjs(from).toISOString().split('T');
+  const { from, to } = relation;
+  const [logGroupName] = relation.list;
+  const [date] = from.split('T');
   const destinationPrefix = `export/${logGroupName}/${date}`.replace(/\/\//g, '/');
   const params = {
     logGroupName,
     destination: DESTINATION,
     destinationPrefix,
-    from,
-    to,
+    from: dayjs(from).valueOf(),
+    to: dayjs(to).valueOf(),
   };
-  logger.info({ from: dayjs(from).add(9, 'hours').toISOString().replace('Z', '+0900') });
   const command = new CreateExportTaskCommand(params);
   return await client.send(command)
   .then(data => {
+    relation.list.shift();
     return {
       ...relation,
       statusText: 'RUNNING',
       taskId: data.taskId,
     };
+  })
+  .catch(e => {
+    logger.warn(e.toString());
+    if (e.message.match('Please make sure the values are within the retention period of the log groups and from value is lesser than the to value')) {
+      relation.list.shift();
+      return {
+        ...relation,
+        statusText: 'COMPLETED',
+      };
+    }
+    if (e.toString() === 'LimitExceededException: Resource limit exceeded.') {
+      return {
+        ...relation,
+        statusText: 'LIMIT',
+        retry: (parseInt(relation.retry, 10) || 0) + 1,
+      };
+    }
+    if (e.toString() === 'ThrottlingException: Rate exceeded') {
+      return {
+        ...relation,
+        statusText: 'RATE',
+        retry: (parseInt(relation.retry, 10) || 0) + 1,
+      };
+    }
+    throw e;
   });
 };
 
@@ -68,7 +93,7 @@ export const handler = async event => {
     };
   })
   .catch(e => {
-    logger.error(e.message);
+    logger.error(e);
     return {
       ts: dayjs().add(9, 'hours').toISOString().replace('Z', '+0900'),
       statusText: 'FAILED',

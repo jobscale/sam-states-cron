@@ -93,6 +93,16 @@ Resources:
               "Seconds": 10,
               "Next": "Export Log Step"
             },
+            "Wait for Limit Check": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "Export Log Step"
+            },
+            "Wait for Rate Check": {
+              "Type": "Wait",
+              "Seconds": 180,
+              "Next": "Export Log Step"
+            },
             "Export Log Step": {
               "Type": "Task",
               "Resource": "${Function2Arn}",
@@ -104,13 +114,23 @@ Resources:
               "Choices": [
                 {
                   "Variable": "$.relation.statusText",
+                  "StringEquals": "COMPLETED",
+                  "Next": "Export Log Step"
+                },
+                {
+                  "Variable": "$.relation.statusText",
                   "StringEquals": "RUNNING",
                   "Next": "Wait for Check"
                 },
                 {
                   "Variable": "$.relation.statusText",
-                  "StringEquals": "COMPLETED",
-                  "Next": "Export Log Step"
+                  "StringEquals": "LIMIT",
+                  "Next": "Wait for Limit Check"
+                },
+                {
+                  "Variable": "$.relation.statusText",
+                  "StringEquals": "RATE",
+                  "Next": "Wait for Rate Check"
                 },
                 {
                   "Variable": "$.relation.statusText",
