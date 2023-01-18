@@ -13,16 +13,17 @@ const describeTask = async relation => {
   return await client.send(command)
   .then(data => {
     const [{ status: { code: statusText } }] = data.exportTasks;
-    return {
-      ...relation,
-      statusText,
-      completed: (parseInt(relation.completed, 10) || 0) + (statusText === 'COMPLETED' ? 1 : 0),
-    };
+    relation.statusText = statusText;
+    relation.completed = (parseInt(relation.completed, 10) || 0) + (statusText === 'COMPLETED' ? 1 : 0);
+    relation.logGroup.seconds = dayjs().unix() - relation.logGroup.begin;
+    relation.logGroup.minutes = Math.floor(relation.logGroup.seconds / 6) / 10;
+    return relation;
   });
 };
 
 const createTask = async relation => {
   if (!relation.list.length) {
+    delete relation.logGroup;
     return {
       ...relation,
       statusText: 'SUCCEEDED',
@@ -45,6 +46,10 @@ const createTask = async relation => {
     relation.list.shift();
     return {
       ...relation,
+      logGroup: {
+        name: logGroupName,
+        begin: dayjs().unix(),
+      },
       statusText: 'RUNNING',
       taskId: data.taskId,
     };

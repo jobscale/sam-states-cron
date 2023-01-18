@@ -124,6 +124,11 @@ Resources:
                 },
                 {
                   "Variable": "$.relation.statusText",
+                  "StringEquals": "PENDING",
+                  "Next": "Wait for Check"
+                },
+                {
+                  "Variable": "$.relation.statusText",
                   "StringEquals": "LIMIT",
                   "Next": "Wait for Limit Check"
                 },
