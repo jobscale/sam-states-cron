@@ -93,6 +93,11 @@ Resources:
               "Seconds": 10,
               "Next": "Export Log Step"
             },
+            "Wait for Pending Check": {
+              "Type": "Wait",
+              "Seconds": 30,
+              "Next": "Export Log Step"
+            },
             "Wait for Limit Check": {
               "Type": "Wait",
               "Seconds": 60,
@@ -125,7 +130,7 @@ Resources:
                 {
                   "Variable": "$.relation.statusText",
                   "StringEquals": "PENDING",
-                  "Next": "Wait for Check"
+                  "Next": "Wait for Pending Check"
                 },
                 {
                   "Variable": "$.relation.statusText",
