@@ -1,0 +1,286 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  Env:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+  StageName:
+    Type: String
+    Default: v1
+    AllowedValues:
+      - v1
+      - v2
+
+Mappings:
+  EnvMap:
+    dev:
+      Env: dev
+
+Resources:
+  IndexLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${Env}-basic-index
+      InlineCode: |
+        const logger = console;
+        exports.handler = async event => {
+          logger.info('EVENT', JSON.stringify(event, null, 2));
+          const response = {
+            statusCode: 200,
+            headers: {
+              'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: JSON.stringify({
+              date: new Date(),
+              message: 'ok',
+            }),
+          };
+          logger.info('RESPONSE', JSON.stringify(response, null, 2));
+          return response;
+        };
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Timeout: 10
+      Environment:
+        Variables:
+          ENV: !Sub ${Env}
+
+  KinesisLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${Env}-basic-serial
+      InlineCode: |
+        const logger = console;
+        exports.handler = async event => {
+          logger.info('EVENT', JSON.stringify(event, null, 2));
+          const response = {
+            statusCode: 200,
+            headers: {
+              'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: JSON.stringify({
+              date: new Date(),
+              message: 'ok',
+            }),
+          };
+          logger.info('RESPONSE', JSON.stringify(response, null, 2));
+          return response;
+        };
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Policies:
+        - KinesisStreamReadPolicy:
+           StreamName: !Sub arn:${AWS::Partition}:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${Env}-basic-kinesis
+      Environment:
+        Variables:
+          ENV: !Sub ${Env}
+      Events:
+        Stream:
+          Type: Kinesis
+          Properties:
+            Stream: !Sub arn:${AWS::Partition}:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${Env}-basic-kinesis
+            StartingPosition: LATEST
+            BatchSize: 20
+            MaximumRetryAttempts: 2
+            BisectBatchOnFunctionError: true
+            ParallelizationFactor: 10
+
+  HttpApiAuth:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${Env}-basic-auth
+      InlineCode: |
+        const logger = console;
+        exports.handler = async event => {
+          logger.info('EVENT', JSON.stringify(event, null, 2));
+          const response =  {
+            isAuthorized: event.headers.authorization === 'ABC123',
+            context: {
+                principalId: Buffer.from('staff-principalId').toString('base64'),
+                source: "Auth0",
+            },
+          };
+          logger.info('RESPONSE', JSON.stringify(response, null, 2));
+          return response;
+        };
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Timeout: 10
+      Environment:
+        Variables:
+          ENV: !Sub ${Env}
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub ${Env}-basic-http-api
+      StageName: !Ref StageName
+      Tags:
+        Env: !Sub ${Env}
+      StageVariables:
+        StageVar: !Ref StageName
+      FailOnWarnings: true
+      AccessLogSettings:
+        DestinationArn: !GetAtt AccessLogs.Arn
+        Format: '
+          {
+            "accountId":"$context.accountId",
+            "requestTime":"$context.requestTime",
+            "requestId":"$context.requestId",
+            "ip":"$context.identity.sourceIp",
+            "userAgent":"$context.identity.userAgent",
+            "httpMethod":"$context.httpMethod",
+            "resourcePath":"$context.path",
+            "status":"$context.status",
+            "protocol":"$context.protocol",
+            "responseLength":"$context.responseLength",
+            "integrationErrorMessage": "$context.integrationErrorMessage",
+            "integrationStatus":"$context.integration.status",
+            "integrationLatency":"$context.integration.latency",
+            "integrationError":"$context.integration.error",
+            "authorizerPrincipalId": "$context.authorizer.principalId",
+            "authorizerError":"$context.authorizer.error",
+            "responseType": "$context.error.responseType",
+            "message": "$context.error.message"
+          }'
+
+  FunctionInvokeRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub ${Env}-http-basic-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub ${Env}-http-basic-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                Resource: '*'
+
+  HttpApiAuthorizer:
+    Type: "AWS::ApiGatewayV2::Authorizer"
+    Properties:
+      Name: !Sub ${Env}-HttpApiAuthorizer
+      ApiId: !Ref HttpApi
+      AuthorizerCredentialsArn: !GetAtt FunctionInvokeRole.Arn
+      AuthorizerResultTtlInSeconds: 0
+      AuthorizerType: "REQUEST"
+      AuthorizerUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${HttpApiAuth}/invocations"
+      IdentitySource:
+      - "$request.header.Authorization"
+      AuthorizerPayloadFormatVersion: "2.0"
+      EnableSimpleResponses: true
+
+  IndexLambdaRoute:
+    Type: "AWS::ApiGatewayV2::Route"
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "POST /path"
+      AuthorizationType: "CUSTOM"
+      AuthorizerId: !Ref HttpApiAuthorizer
+      Target: !Sub "integrations/${IndexLambdaIntegration}"
+
+  IndexLambdaIntegration:
+    Type: "AWS::ApiGatewayV2::Integration"
+    Properties:
+      ApiId: !Ref HttpApi
+      ConnectionType: "INTERNET"
+      IntegrationType: "AWS_PROXY"
+      IntegrationMethod: "POST"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${IndexLambda}/invocations"
+      CredentialsArn: !GetAtt LambdaProxyRole.Arn
+      TimeoutInMillis: 30000
+      PayloadFormatVersion: "1.0"
+
+  KinesisProxyRoute:
+    Type: "AWS::ApiGatewayV2::Route"
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "POST /serial"
+      AuthorizationType: "CUSTOM"
+      AuthorizerId: !Ref HttpApiAuthorizer
+      Target: !Sub "integrations/${KinesisProxyIntegration}"
+
+  KinesisProxyIntegration:
+    Type: "AWS::ApiGatewayV2::Integration"
+    Properties:
+      ApiId: !Ref HttpApi
+      ConnectionType: "INTERNET"
+      IntegrationType: "AWS_PROXY"
+      IntegrationSubtype: "Kinesis-PutRecord"
+      RequestParameters:
+        PartitionKey: "$request.body.date"
+        Data: "$request.body"
+        StreamName: !Sub "${Env}-basic-kinesis"
+      CredentialsArn: !GetAtt KinesisProxyRole.Arn
+      TimeoutInMillis: 30000
+      PayloadFormatVersion: "1.0"
+
+  KinesisProxyRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/"
+      RoleName: !Sub ${Env}-apigw-kinesis-proxy-role
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+      - "arn:aws:iam::aws:policy/AmazonKinesisFullAccess"
+
+  LambdaProxyRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/"
+      RoleName: !Sub ${Env}-apigw-lambda-proxy-role
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+      - "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+
+  AccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /apigateway/${Env}-http-basic-accessLog
+      RetentionInDays: 3
+
+  IndexLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/dev-basic-index
+      RetentionInDays: 3
+
+  SerialLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/dev-basic-serial
+      RetentionInDays: 3
+
+  AuthLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/dev-basic-auth
+      RetentionInDays: 3
+
+Outputs:
+  HttpApiUrl:
+    Description: URL of your API endpoint
+    Value:
+      Fn::Sub: 'https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${StageName}/'
+  HttpApiId:
+    Description: Api id of HttpApi
+    Value:
+      Ref: HttpApi
