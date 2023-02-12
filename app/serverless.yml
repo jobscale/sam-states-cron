@@ -35,9 +35,9 @@ package:
   patterns:
     - '!*'
     - '!**'
+    - '*.js'
+    - 'services/**'
     - 'node_modules/**'
-    - 'index.js'
-    - 'app/**'
 
 functions:
   create-ami:
@@ -54,7 +54,7 @@ functions:
       - schedule:
           name: ${self:custom.eventName}
           description: Daily Create AMI
-          rate: cron(10 20 * * ? *)
+          rate: cron(20 17 * * ? *)
 
 resources:
   Outputs:

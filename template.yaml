@@ -43,4 +43,4 @@ Resources:
           Properties:
             Name: !Sub ${Env}-create-ami
             Description: Daily Create AMI
-            Schedule: cron(40 17 * * ? *)
+            Schedule: cron(50 17 * * ? *)
