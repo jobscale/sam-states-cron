@@ -3,16 +3,16 @@
 ## versions
 
 npm --version
-6.1.0
+9.3.1
 
 node --version
-v8.11.3
+v18.14.0
 
 ### Getting source
 
 ```bash
-$ git clone https://github.com/jobscale/xxx.git
-$ cd xxx
+$ git clone https://github.com/jobscale/aws-lambda.git
+$ cd aws-lambda
 ```
 
 ### Setup
@@ -21,8 +21,8 @@ $ cd xxx
 $ npm i
 ```
 
-### Run module
+### Lint
 
 ```bash
-$ npm run node
+$ npm run lint
 ```

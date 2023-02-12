@@ -5,6 +5,8 @@
   "license": "MIT",
   "author": "jobscale",
   "scripts": {
+    "start": "NODE_LOCAL=allow node .",
+    "deploy": "serverless deploy",
     "lint": "eslint . --fix"
   },
   "dependencies": {
@@ -14,6 +16,7 @@
   "devDependencies": {
     "eslint": "^8.29.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.26.0"
+    "eslint-plugin-import": "^2.26.0",
+    "serverless": "^3.27.0"
   }
 }
