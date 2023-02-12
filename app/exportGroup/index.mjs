@@ -14,7 +14,16 @@ const describeTask = async relation => {
   .then(data => {
     const [{ status: { code: statusText } }] = data.exportTasks;
     relation.statusText = statusText;
-    relation.completed = (parseInt(relation.completed, 10) || 0) + (statusText === 'COMPLETED' ? 1 : 0);
+    if (statusText === 'COMPLETED') {
+      relation.completed = (parseInt(relation.completed, 10) || 0) + 1;
+    } else if (statusText === 'FAILED') {
+      logger.info(data.exportTasks);
+      relation.failedRetry = (parseInt(relation.failedRetry, 10) || 0) + 1;
+      if (relation.failedRetry < 100) {
+        relation.list.push(relation.logGroup.name);
+        relation.statusText = 'COMPLETED';
+      }
+    }
     relation.logGroup.seconds = dayjs().unix() - relation.logGroup.begin;
     relation.logGroup.minutes = Math.floor(relation.logGroup.seconds / 6) / 10;
     return relation;
