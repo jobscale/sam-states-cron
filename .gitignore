@@ -1,12 +1,18 @@
 .vscode/
 .idea/
-logs/
 config/
 package-lock.json
+
+# logs
+logs/
+*.log
 
 # package directories
 node_modules/
 jspm_packages
 
 # Serverless directories
-.serverless
+.serverless/
+
+# SAM
+.aws-sam/

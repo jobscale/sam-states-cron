@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -eu
+
+echo Usage: $0 develop
+
+{
+  npm i --omit=dev
+  serverless deploy --stage $1
+} 2>&1 | tee deploy-$(date +%s%3N).log

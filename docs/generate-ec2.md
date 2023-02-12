@@ -50,7 +50,7 @@ VPC の CIDR を確認する
 
 ### EC2 の設定
 
-- 自分のアカウントを作成
+- Linux に自分のアカウントを作成
 ```
 userAdd() {
   sudo useradd -g staff -G users,sudo --shell $(which bash) --create-home $1
