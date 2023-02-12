@@ -25,7 +25,7 @@ custom:
   service: ${self:service}
   region: ${aws:region}
   accountId: ${aws:accountId}
-  stackName: ${self:custom.env}-${self:custom.service}
+  stackName: ${self:custom.env}-${self:custom.service}-sls
   functionName: ${self:custom.stackName}
   eventName: ${self:custom.stackName}
   roleName: ${self:custom.stackName}
@@ -42,6 +42,7 @@ package:
 functions:
   create-ami:
     name: ${self:custom.functionName}
+    description: Daily Create AMI
     handler: app/index.handler
     runtime: nodejs18.x
     memorySize: 128
@@ -52,7 +53,8 @@ functions:
     events:
       - schedule:
           name: ${self:custom.eventName}
-          rate: cron(50 19 * * ? *)
+          description: Daily Create AMI
+          rate: cron(10 20 * * ? *)
 
 resources:
   Outputs:

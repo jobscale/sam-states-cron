@@ -15,6 +15,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${Env}-create-ami
+      Description: Daily Create AMI
       CodeUri: app
       Handler: index.handler
       Timeout: 300
