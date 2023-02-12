@@ -35,6 +35,7 @@ Resources:
       Environment:
         Variables:
           ENV: !Sub ${Env}
+          AMI_RETENTION_PERIOD: 2
       Events:
         Schedule:
           Type: Schedule

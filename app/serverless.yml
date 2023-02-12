@@ -47,9 +47,8 @@ functions:
     memorySize: 128
     timeout: 300
     environment:
-      NODE_ENV: ${self.custom.env}
+      ENV: ${self.custom.env}
       AMI_RETENTION_PERIOD: 2
-      ACCOUNT_ID: ${aws:accountId}
     events:
       - schedule:
           name: ${self:custom.eventName}
