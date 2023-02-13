@@ -7,10 +7,38 @@ Parameters:
   Env:
     Type: String
     AllowedValues:
-      - develop
-      - staging
+    - develop
+    - staging
 
 Resources:
+  RoleCreateAMI:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub ${Env}-create-ami
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal: {"Service":"lambda.amazonaws.com"}
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: !Sub ${Env}-create-ami
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action: ["logs:CreateLogStream","logs:CreateLogGroup","logs:PutLogEvents"]
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+          - Effect: Allow
+            Action:
+            - 'ec2:describeInstances'
+            - 'ec2:createImage'
+            - 'ec2:createTags'
+            - 'ec2:describeImages'
+            - 'ec2:deregisterImage'
+            - 'ec2:deleteSnapshot'
+            Resource: '*'
+
   CreateAMI:
     Type: AWS::Serverless::Function
     Properties:
@@ -20,19 +48,20 @@ Resources:
       Handler: index.handler
       Timeout: 300
       Runtime: nodejs18.x
-      Policies:
-      - AWSLambdaExecute
-      - Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - "ec2:describeInstances"
-              - "ec2:createImage"
-              - "ec2:createTags"
-              - "ec2:describeImages"
-              - "ec2:deregisterImage"
-              - "ec2:deleteSnapshot"
-            Resource: '*'
+      Role: !GetAtt RoleCreateAMI.Arn
+      # Policies:
+      # - AWSLambdaExecute
+      # - Version: '2012-10-17'
+      #   Statement:
+      #     - Effect: Allow
+      #       Action:
+      #         - "ec2:describeInstances"
+      #         - "ec2:createImage"
+      #         - "ec2:createTags"
+      #         - "ec2:describeImages"
+      #         - "ec2:deregisterImage"
+      #         - "ec2:deleteSnapshot"
+      #       Resource: '*'
       Environment:
         Variables:
           ENV: !Sub ${Env}
