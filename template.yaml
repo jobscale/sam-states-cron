@@ -16,10 +16,13 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-listGroups
-      CodeUri: app/listGroups/
+      CodeUri: app/listGroups
       Handler: index.handler
       Timeout: 10
       Runtime: nodejs18.x
+      Environment:
+        Variables:
+          ENV: !Sub ${Env}
       Policies:
       - AWSLambdaExecute
       - Version: '2012-10-17'
@@ -33,10 +36,13 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-exportGroup
-      CodeUri: app/exportGroup/
+      CodeUri: app/exportGroup
       Handler: index.handler
       Timeout: 10
       Runtime: nodejs18.x
+      Environment:
+        Variables:
+          ENV: !Sub ${Env}
       Policies:
       - AWSLambdaExecute
       - Version: '2012-10-17'
@@ -77,7 +83,6 @@ Resources:
     Properties:
       StateMachineName: !Sub "${AWS::StackName}-StateMachine"
       RoleArn: !GetAtt StateMachineIAMRole.Arn
-      # DefinitionUri: stateMachine/definition.json
       DefinitionString: |
         {
           "StartAt": "List Log Group",
