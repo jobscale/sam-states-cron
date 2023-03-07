@@ -1,12 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Parameters:
+  App:
+    Type: String
+    Default: app
   Env:
     Type: String
-    Default: dev
+    Default: develop
     AllowedValues:
-      - dev
-      - stg
+      - develop
+      - staging
   StageName:
     Type: String
     Default: v1
@@ -16,34 +19,18 @@ Parameters:
 
 Mappings:
   EnvMap:
-    dev:
-      Env: dev
+    develop:
+      Env: develop
 
 Resources:
-  IndexLambda:
+  PathLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${Env}-basic-index
-      InlineCode: |
-        const logger = console;
-        exports.handler = async event => {
-          logger.info('EVENT', JSON.stringify(event, null, 2));
-          const response = {
-            statusCode: 200,
-            headers: {
-              'Content-Type': 'application/json; charset=UTF-8',
-            },
-            body: JSON.stringify({
-              date: new Date(),
-              message: 'ok',
-            }),
-          };
-          logger.info('RESPONSE', JSON.stringify(response, null, 2));
-          return response;
-        };
+      FunctionName: !Sub ${Env}-${App}-path
+      CodeUri: !Sub app/${App}Path
       Handler: index.handler
-      Runtime: nodejs18.x
       Timeout: 10
+      Runtime: nodejs18.x
       Environment:
         Variables:
           ENV: !Sub ${Env}
@@ -51,29 +38,14 @@ Resources:
   KinesisLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${Env}-basic-serial
-      InlineCode: |
-        const logger = console;
-        exports.handler = async event => {
-          logger.info('EVENT', JSON.stringify(event, null, 2));
-          const response = {
-            statusCode: 200,
-            headers: {
-              'Content-Type': 'application/json; charset=UTF-8',
-            },
-            body: JSON.stringify({
-              date: new Date(),
-              message: 'ok',
-            }),
-          };
-          logger.info('RESPONSE', JSON.stringify(response, null, 2));
-          return response;
-        };
+      FunctionName: !Sub ${Env}-${App}-serial
+      CodeUri: !Sub app/${App}Serial
       Handler: index.handler
+      Timeout: 10
       Runtime: nodejs18.x
       Policies:
         - KinesisStreamReadPolicy:
-           StreamName: !Sub arn:${AWS::Partition}:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${Env}-basic-kinesis
+           StreamName: !GetAtt KinesisStream.Arn
       Environment:
         Variables:
           ENV: !Sub ${Env}
@@ -81,9 +53,10 @@ Resources:
         Stream:
           Type: Kinesis
           Properties:
-            Stream: !Sub arn:${AWS::Partition}:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${Env}-basic-kinesis
+            Stream: !GetAtt KinesisStream.Arn
             StartingPosition: LATEST
             BatchSize: 20
+            MaximumBatchingWindowInSeconds: 1
             MaximumRetryAttempts: 2
             BisectBatchOnFunctionError: true
             ParallelizationFactor: 10
@@ -91,24 +64,11 @@ Resources:
   HttpApiAuth:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${Env}-basic-auth
-      InlineCode: |
-        const logger = console;
-        exports.handler = async event => {
-          logger.info('EVENT', JSON.stringify(event, null, 2));
-          const response =  {
-            isAuthorized: event.headers.authorization === 'ABC123',
-            context: {
-                principalId: Buffer.from('staff-principalId').toString('base64'),
-                source: "Auth0",
-            },
-          };
-          logger.info('RESPONSE', JSON.stringify(response, null, 2));
-          return response;
-        };
+      FunctionName: !Sub ${Env}-${App}-auth
+      CodeUri: !Sub app/${App}Auth
       Handler: index.handler
-      Runtime: nodejs18.x
       Timeout: 10
+      Runtime: nodejs18.x
       Environment:
         Variables:
           ENV: !Sub ${Env}
@@ -116,7 +76,7 @@ Resources:
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      Name: !Sub ${Env}-basic-http-api
+      Name: !Sub ${Env}-${App}-http-api
       StageName: !Ref StageName
       Tags:
         Env: !Sub ${Env}
@@ -142,6 +102,7 @@ Resources:
             "integrationLatency":"$context.integration.latency",
             "integrationError":"$context.integration.error",
             "authorizerPrincipalId": "$context.authorizer.principalId",
+            "body": "$context.authorizer.body",
             "authorizerError":"$context.authorizer.error",
             "responseType": "$context.error.responseType",
             "message": "$context.error.message"
@@ -150,7 +111,7 @@ Resources:
   FunctionInvokeRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Sub ${Env}-http-basic-role
+      RoleName: !Sub ${Env}-${App}-http-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -161,7 +122,7 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
-        - PolicyName: !Sub ${Env}-http-basic-policy
+        - PolicyName: !Sub ${Env}-${App}-http-policy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -184,32 +145,32 @@ Resources:
       AuthorizerPayloadFormatVersion: "2.0"
       EnableSimpleResponses: true
 
-  IndexLambdaRoute:
+  PathLambdaRoute:
     Type: "AWS::ApiGatewayV2::Route"
     Properties:
       ApiId: !Ref HttpApi
       RouteKey: "POST /path"
       AuthorizationType: "CUSTOM"
       AuthorizerId: !Ref HttpApiAuthorizer
-      Target: !Sub "integrations/${IndexLambdaIntegration}"
+      Target: !Sub "integrations/${PathLambdaIntegration}"
 
-  IndexLambdaIntegration:
+  PathLambdaIntegration:
     Type: "AWS::ApiGatewayV2::Integration"
     Properties:
       ApiId: !Ref HttpApi
       ConnectionType: "INTERNET"
       IntegrationType: "AWS_PROXY"
       IntegrationMethod: "POST"
-      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${IndexLambda}/invocations"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${PathLambda}/invocations"
       CredentialsArn: !GetAtt LambdaProxyRole.Arn
-      TimeoutInMillis: 30000
+      TimeoutInMillis: 20000
       PayloadFormatVersion: "1.0"
 
   KinesisProxyRoute:
     Type: "AWS::ApiGatewayV2::Route"
     Properties:
       ApiId: !Ref HttpApi
-      RouteKey: "POST /serial"
+      RouteKey: "POST /kinesis"
       AuthorizationType: "CUSTOM"
       AuthorizerId: !Ref HttpApiAuthorizer
       Target: !Sub "integrations/${KinesisProxyIntegration}"
@@ -222,11 +183,11 @@ Resources:
       IntegrationType: "AWS_PROXY"
       IntegrationSubtype: "Kinesis-PutRecord"
       RequestParameters:
-        PartitionKey: "$request.body.date"
+        PartitionKey: "$request.body.segment"
         Data: "$request.body"
-        StreamName: !Sub "${Env}-basic-kinesis"
+        StreamName: !Sub "${Env}-${App}-kinesis"
       CredentialsArn: !GetAtt KinesisProxyRole.Arn
-      TimeoutInMillis: 30000
+      TimeoutInMillis: 20000
       PayloadFormatVersion: "1.0"
 
   KinesisProxyRole:
@@ -251,28 +212,38 @@ Resources:
       - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
       - "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
 
+  KinesisStream:
+    Type: "AWS::Kinesis::Stream"
+    Properties:
+      Name: !Sub ${Env}-${App}-kinesis
+      RetentionPeriodHours: 24
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+      ShardCount: 1
+
   AccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /apigateway/${Env}-http-basic-accessLog
+      LogGroupName: !Sub /apigateway/${Env}-${App}-http-accessLog
       RetentionInDays: 3
 
-  IndexLogs:
+  PathLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/dev-basic-index
+      LogGroupName: !Sub /aws/lambda/${Env}-${App}-path
       RetentionInDays: 3
 
   SerialLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/dev-basic-serial
+      LogGroupName: !Sub /aws/lambda/${Env}-${App}-serial
       RetentionInDays: 3
 
   AuthLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/dev-basic-auth
+      LogGroupName: !Sub /aws/lambda/${Env}-${App}-auth
       RetentionInDays: 3
 
 Outputs:
