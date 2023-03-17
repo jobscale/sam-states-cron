@@ -1,15 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Parameters:
-  App:
-    Type: String
-    Default: app
   Env:
     Type: String
     Default: develop
     AllowedValues:
       - develop
       - staging
+  AppPath:
+    Type: String
+    Default: app
   StageName:
     Type: String
     Default: v1
@@ -26,11 +26,13 @@ Resources:
   PathLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${Env}-${App}-path
-      CodeUri: !Sub app/${App}Path
+      FunctionName: !Sub ${AWS::StackName}-path
+      CodeUri: !Sub ${AppPath}/appPath
       Handler: index.handler
       Timeout: 10
       Runtime: nodejs18.x
+      Tags:
+        Env: !Sub ${Env}
       Environment:
         Variables:
           ENV: !Sub ${Env}
@@ -38,17 +40,19 @@ Resources:
   KinesisLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${Env}-${App}-serial
-      CodeUri: !Sub app/${App}Serial
+      FunctionName: !Sub ${AWS::StackName}-serial
+      CodeUri: !Sub ${AppPath}/appSerial
       Handler: index.handler
       Timeout: 10
       Runtime: nodejs18.x
-      Policies:
-        - KinesisStreamReadPolicy:
-           StreamName: !GetAtt KinesisStream.Arn
+      Tags:
+        Env: !Sub ${Env}
       Environment:
         Variables:
           ENV: !Sub ${Env}
+      Policies:
+        - KinesisStreamReadPolicy:
+           StreamName: !GetAtt KinesisStream.Arn
       Events:
         Stream:
           Type: Kinesis
@@ -64,11 +68,13 @@ Resources:
   HttpApiAuth:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${Env}-${App}-auth
-      CodeUri: !Sub app/${App}Auth
+      FunctionName: !Sub ${AWS::StackName}-auth
+      CodeUri: !Sub ${AppPath}/appAuth
       Handler: index.handler
       Timeout: 10
       Runtime: nodejs18.x
+      Tags:
+        Env: !Sub ${Env}
       Environment:
         Variables:
           ENV: !Sub ${Env}
@@ -76,7 +82,7 @@ Resources:
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      Name: !Sub ${Env}-${App}-http-api
+      Name: !Sub ${AWS::StackName}-http-api
       StageName: !Ref StageName
       Tags:
         Env: !Sub ${Env}
@@ -111,7 +117,7 @@ Resources:
   FunctionInvokeRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Sub ${Env}-${App}-http-role
+      RoleName: !Sub ${AWS::StackName}-http-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -122,7 +128,7 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
-        - PolicyName: !Sub ${Env}-${App}-http-policy
+        - PolicyName: !Sub ${AWS::StackName}-http-policy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -134,7 +140,7 @@ Resources:
   HttpApiAuthorizer:
     Type: "AWS::ApiGatewayV2::Authorizer"
     Properties:
-      Name: !Sub ${Env}-HttpApiAuthorizer
+      Name: !Sub ${AWS::StackName}-HttpApiAuthorizer
       ApiId: !Ref HttpApi
       AuthorizerCredentialsArn: !GetAtt FunctionInvokeRole.Arn
       AuthorizerResultTtlInSeconds: 0
@@ -185,7 +191,7 @@ Resources:
       RequestParameters:
         PartitionKey: "$request.body.segment"
         Data: "$request.body"
-        StreamName: !Sub "${Env}-${App}-kinesis"
+        StreamName: !Sub "${AWS::StackName}-kinesis"
       CredentialsArn: !GetAtt KinesisProxyRole.Arn
       TimeoutInMillis: 20000
       PayloadFormatVersion: "1.0"
@@ -194,7 +200,7 @@ Resources:
     Type: "AWS::IAM::Role"
     Properties:
       Path: "/"
-      RoleName: !Sub ${Env}-apigw-kinesis-proxy-role
+      RoleName: !Sub ${AWS::StackName}-apigw-kinesis-proxy-role
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
@@ -205,7 +211,7 @@ Resources:
     Type: "AWS::IAM::Role"
     Properties:
       Path: "/"
-      RoleName: !Sub ${Env}-apigw-lambda-proxy-role
+      RoleName: !Sub ${AWS::StackName}-apigw-lambda-proxy-role
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
@@ -215,35 +221,37 @@ Resources:
   KinesisStream:
     Type: "AWS::Kinesis::Stream"
     Properties:
-      Name: !Sub ${Env}-${App}-kinesis
+      Name: !Sub ${AWS::StackName}-kinesis
       RetentionPeriodHours: 24
       StreamEncryption:
         EncryptionType: KMS
         KeyId: alias/aws/kinesis
       ShardCount: 1
+      Tags:
+        Env: !Sub ${Env}
 
   AccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /apigateway/${Env}-${App}-http-accessLog
+      LogGroupName: !Sub /apigateway/${AWS::StackName}-http-accessLog
       RetentionInDays: 3
 
   PathLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${Env}-${App}-path
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-path
       RetentionInDays: 3
 
   SerialLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${Env}-${App}-serial
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-serial
       RetentionInDays: 3
 
   AuthLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${Env}-${App}-auth
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-auth
       RetentionInDays: 3
 
 Outputs:

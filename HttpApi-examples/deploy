@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -eu
+
+{
+  sam build
+  sam deploy --config-env develop
+}
