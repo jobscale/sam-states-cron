@@ -227,8 +227,6 @@ Resources:
         EncryptionType: KMS
         KeyId: alias/aws/kinesis
       ShardCount: 1
-      Tags:
-        Env: !Sub ${Env}
 
   AccessLogs:
     Type: AWS::Logs::LogGroup
