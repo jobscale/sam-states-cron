@@ -23,12 +23,30 @@ Mappings:
       Env: develop
 
 Resources:
+  ContainerLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      FunctionName: !Sub ${AWS::StackName}-container
+      MemorySize: 256
+      Timeout: 10
+      Tags:
+        Env: !Sub ${Env}
+      Environment:
+        Variables:
+          ENV: !Sub ${Env}
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: !Sub ${AppPath}/lambda-container
+      DockerTag: !Sub ${Env}
+
   PathLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-path
       CodeUri: !Sub ${AppPath}/appPath
       Handler: index.handler
+      MemorySize: 256
       Timeout: 10
       Runtime: nodejs18.x
       Tags:
@@ -43,6 +61,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-serial
       CodeUri: !Sub ${AppPath}/appSerial
       Handler: index.handler
+      MemorySize: 256
       Timeout: 10
       Runtime: nodejs18.x
       Tags:
@@ -227,6 +246,9 @@ Resources:
         EncryptionType: KMS
         KeyId: alias/aws/kinesis
       ShardCount: 1
+      Tags:
+        - Key: Env
+          Value: !Sub ${Env}
 
   AccessLogs:
     Type: AWS::Logs::LogGroup
