@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: >
   Sample SAM Template for triggering AWS Step Functions state machines via scheduled CloudWatch events.
@@ -25,7 +25,7 @@ Resources:
           ENV: !Sub ${Env}
       Policies:
       - AWSLambdaExecute
-      - Version: '2012-10-17'
+      - Version: 2012-10-17
         Statement:
           - Effect: Allow
             Action:
@@ -45,7 +45,7 @@ Resources:
           ENV: !Sub ${Env}
       Policies:
       - AWSLambdaExecute
-      - Version: '2012-10-17'
+      - Version: 2012-10-17
         Statement:
           - Effect: Allow
             Action:
@@ -56,24 +56,21 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: 2012-10-17
         Statement:
-          -
-            Effect: "Allow"
+          - Effect: Allow
             Principal:
               Service:
-                  - Fn::Sub: "states.${AWS::Region}.amazonaws.com"
+                  - Fn::Sub: states.${AWS::Region}.amazonaws.com
             Action:
-              - "sts:AssumeRole"
+              - sts:AssumeRole
       Policies:
-        -
-          PolicyName: StatesExecutionPolicy
+        - PolicyName: StatesExecutionPolicy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: 2012-10-17
             Statement:
-              -
-                Effect: "Allow"
-                Action: "lambda:InvokeFunction"
+              - Effect: Allow
+                Action: lambda:InvokeFunction
                 Resource:
                   - !GetAtt Function1.Arn
                   - !GetAtt Function2.Arn
@@ -81,7 +78,7 @@ Resources:
   StateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub "${AWS::StackName}-StateMachine"
+      StateMachineName: !Sub ${AWS::StackName}-StateMachine
       RoleArn: !GetAtt StateMachineIAMRole.Arn
       DefinitionString: |
         {
@@ -178,35 +175,31 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: 2012-10-17
         Statement:
-          -
-            Effect: "Allow"
+          - Effect: Allow
             Principal:
               Service:
-                  - Fn::Sub: "events.amazonaws.com"
+                  - Fn::Sub: events.amazonaws.com
             Action:
-              - "sts:AssumeRole"
+              - sts:AssumeRole
       Policies:
-        -
-          PolicyName: StateMachineExecutionPolicy
+        - PolicyName: StateMachineExecutionPolicy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: 2012-10-17
             Statement:
-              -
-                Effect: "Allow"
-                Action: "states:StartExecution"
+              - Effect: Allow
+                Action: states:StartExecution
                 Resource:
                   - !Ref StateMachine
 
   ScheduledEventRule:
-    Type: "AWS::Events::Rule"
+    Type: AWS::Events::Rule
     Properties:
-      Description: "Scheduled event to trigger Step Functions state machine"
+      Description: Scheduled event to trigger Step Functions state machine
       ScheduleExpression: cron(9 17 * * ? *)
-      State: "ENABLED"
+      State: ENABLED
       Targets:
-        -
-          Arn: !Ref StateMachine
+        - Arn: !Ref StateMachine
           Id: !GetAtt StateMachine.Name
           RoleArn: !GetAtt ScheduledEventIAMRole.Arn

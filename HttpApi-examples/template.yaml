@@ -49,6 +49,9 @@ Resources:
       MemorySize: 256
       Timeout: 10
       Runtime: nodejs18.x
+      Policies:
+        - DynamoDBCrudPolicy:
+           TableName: !Ref AutoscalingSampleTable
       Tags:
         Env: !Sub ${Env}
       Environment:
@@ -156,9 +159,9 @@ Resources:
       AuthorizerCredentialsArn: !GetAtt FunctionInvokeRole.Arn
       AuthorizerResultTtlInSeconds: 0
       AuthorizerType: REQUEST
-      AuthorizerUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${HttpApiAuth}/invocations"
+      AuthorizerUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${HttpApiAuth}/invocations
       IdentitySource:
-      - "$request.header.Authorization"
+      - $request.header.Authorization
       AuthorizerPayloadFormatVersion: 2.0
       EnableSimpleResponses: true
 
@@ -169,7 +172,7 @@ Resources:
       RouteKey: POST /path
       AuthorizationType: CUSTOM
       AuthorizerId: !Ref HttpApiAuthorizer
-      Target: !Sub "integrations/${PathLambdaIntegration}"
+      Target: !Sub integrations/${PathLambdaIntegration}
 
   PathLambdaIntegration:
     Type: AWS::ApiGatewayV2::Integration
@@ -178,7 +181,7 @@ Resources:
       ConnectionType: INTERNET
       IntegrationType: AWS_PROXY
       IntegrationMethod: POST
-      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${PathLambda}/invocations"
+      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${PathLambda}/invocations
       CredentialsArn: !GetAtt LambdaProxyRole.Arn
       TimeoutInMillis: 20000
       PayloadFormatVersion: 1.0
@@ -190,7 +193,7 @@ Resources:
       RouteKey: POST /kinesis
       AuthorizationType: CUSTOM
       AuthorizerId: !Ref HttpApiAuthorizer
-      Target: !Sub "integrations/${KinesisProxyIntegration}"
+      Target: !Sub integrations/${KinesisProxyIntegration}
 
   KinesisProxyIntegration:
     Type: AWS::ApiGatewayV2::Integration
@@ -200,9 +203,9 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationSubtype: Kinesis-PutRecord
       RequestParameters:
-        PartitionKey: "$request.body.segment"
-        Data: "$request.body"
-        StreamName: !Sub "${AWS::StackName}-kinesis"
+        PartitionKey: $request.body.segment
+        Data: $request.body
+        StreamName: !Sub ${AWS::StackName}-kinesis
       CredentialsArn: !GetAtt KinesisProxyRole.Arn
       TimeoutInMillis: 20000
       PayloadFormatVersion: 1.0
@@ -241,6 +244,96 @@ Resources:
       Tags:
         - Key: Env
           Value: !Sub ${Env}
+
+  AutoscalingSampleTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-AutoscalingSample
+      AttributeDefinitions:
+      - AttributeName: uuid
+        AttributeType: S
+      KeySchema:
+      - AttributeName: uuid
+        KeyType: HASH
+      # BillingMode: PAY_PER_REQUEST
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        WriteCapacityUnits: 2
+        ReadCapacityUnits: 2
+      Tags:
+        - Key: Env
+          Value: !Sub ${Env}
+        - Key: Env2
+          Value: !Sub ${Env}
+
+  WriteCapacityScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 2
+      MinCapacity: 1
+      ResourceId: !Join [/, [table, !Ref AutoscalingSampleTable]]
+      ScalableDimension: dynamodb:table:WriteCapacityUnits
+      ServiceNamespace: dynamodb
+      RoleARN: !GetAtt AutoscalingRole.Arn
+
+  WriteAutoscalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub ${AWS::StackName}-WriteAutoscaling
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref WriteCapacityScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 60.0
+        ScaleOutCooldown: 0
+        ScaleInCooldown: 300
+        PredefinedMetricSpecification:
+          PredefinedMetricType: DynamoDBWriteCapacityUtilization
+
+  ReadCapacityScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 2
+      MinCapacity: 1
+      ResourceId: !Join [/, [table, !Ref AutoscalingSampleTable]]
+      ScalableDimension: dynamodb:table:ReadCapacityUnits
+      ServiceNamespace: dynamodb
+      RoleARN: !GetAtt AutoscalingRole.Arn
+
+  ReadAutoscalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub ${AWS::StackName}-ReadAutoscaling
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ReadCapacityScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 60.0
+        ScaleOutCooldown: 0
+        ScaleInCooldown: 300
+        PredefinedMetricSpecification:
+          PredefinedMetricType: DynamoDBReadCapacityUtilization
+
+  AutoscalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      RoleName: !Sub ${AWS::StackName}-application-autoscaling-role
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"application-autoscaling.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "dynamodb:DescribeTable"
+                  - "dynamodb:UpdateTable"
+                  - "cloudwatch:PutMetricAlarm"
+                  - "cloudwatch:DescribeAlarms"
+                  - "cloudwatch:GetMetricStatistics"
+                  - "cloudwatch:SetAlarmState"
+                  - "cloudwatch:DeleteAlarms"
+                Resource: '*'
 
   AccessLogs:
     Type: AWS::Logs::LogGroup
