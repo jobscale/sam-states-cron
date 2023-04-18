@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Parameters:
   Env:
@@ -122,123 +122,115 @@ Resources:
             "status":"$context.status",
             "protocol":"$context.protocol",
             "responseLength":"$context.responseLength",
-            "integrationErrorMessage": "$context.integrationErrorMessage",
+            "integrationErrorMessage":"$context.integrationErrorMessage",
             "integrationStatus":"$context.integration.status",
             "integrationLatency":"$context.integration.latency",
             "integrationError":"$context.integration.error",
-            "authorizerPrincipalId": "$context.authorizer.principalId",
-            "body": "$context.authorizer.body",
+            "authorizerPrincipalId":"$context.authorizer.principalId",
+            "body":"$context.authorizer.body",
             "authorizerError":"$context.authorizer.error",
-            "responseType": "$context.error.responseType",
-            "message": "$context.error.message"
+            "responseType":"$context.error.responseType",
+            "message":"$context.error.message"
           }'
 
   FunctionInvokeRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AWS::StackName}-http-role
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - apigateway.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       Policies:
         - PolicyName: !Sub ${AWS::StackName}-http-policy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
-                  - 'lambda:InvokeFunction'
+                  - lambda:InvokeFunction
                 Resource: '*'
 
   HttpApiAuthorizer:
-    Type: "AWS::ApiGatewayV2::Authorizer"
+    Type: AWS::ApiGatewayV2::Authorizer
     Properties:
       Name: !Sub ${AWS::StackName}-HttpApiAuthorizer
       ApiId: !Ref HttpApi
       AuthorizerCredentialsArn: !GetAtt FunctionInvokeRole.Arn
       AuthorizerResultTtlInSeconds: 0
-      AuthorizerType: "REQUEST"
+      AuthorizerType: REQUEST
       AuthorizerUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${HttpApiAuth}/invocations"
       IdentitySource:
       - "$request.header.Authorization"
-      AuthorizerPayloadFormatVersion: "2.0"
+      AuthorizerPayloadFormatVersion: 2.0
       EnableSimpleResponses: true
 
   PathLambdaRoute:
-    Type: "AWS::ApiGatewayV2::Route"
+    Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref HttpApi
-      RouteKey: "POST /path"
-      AuthorizationType: "CUSTOM"
+      RouteKey: POST /path
+      AuthorizationType: CUSTOM
       AuthorizerId: !Ref HttpApiAuthorizer
       Target: !Sub "integrations/${PathLambdaIntegration}"
 
   PathLambdaIntegration:
-    Type: "AWS::ApiGatewayV2::Integration"
+    Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref HttpApi
-      ConnectionType: "INTERNET"
-      IntegrationType: "AWS_PROXY"
-      IntegrationMethod: "POST"
+      ConnectionType: INTERNET
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
       IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${PathLambda}/invocations"
       CredentialsArn: !GetAtt LambdaProxyRole.Arn
       TimeoutInMillis: 20000
-      PayloadFormatVersion: "1.0"
+      PayloadFormatVersion: 1.0
 
   KinesisProxyRoute:
-    Type: "AWS::ApiGatewayV2::Route"
+    Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref HttpApi
-      RouteKey: "POST /kinesis"
-      AuthorizationType: "CUSTOM"
+      RouteKey: POST /kinesis
+      AuthorizationType: CUSTOM
       AuthorizerId: !Ref HttpApiAuthorizer
       Target: !Sub "integrations/${KinesisProxyIntegration}"
 
   KinesisProxyIntegration:
-    Type: "AWS::ApiGatewayV2::Integration"
+    Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref HttpApi
-      ConnectionType: "INTERNET"
-      IntegrationType: "AWS_PROXY"
-      IntegrationSubtype: "Kinesis-PutRecord"
+      ConnectionType: INTERNET
+      IntegrationType: AWS_PROXY
+      IntegrationSubtype: Kinesis-PutRecord
       RequestParameters:
         PartitionKey: "$request.body.segment"
         Data: "$request.body"
         StreamName: !Sub "${AWS::StackName}-kinesis"
       CredentialsArn: !GetAtt KinesisProxyRole.Arn
       TimeoutInMillis: 20000
-      PayloadFormatVersion: "1.0"
+      PayloadFormatVersion: 1.0
 
   KinesisProxyRole:
-    Type: "AWS::IAM::Role"
+    Type: AWS::IAM::Role
     Properties:
-      Path: "/"
+      Path: /
       RoleName: !Sub ${AWS::StackName}-apigw-kinesis-proxy-role
-      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
       - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
       - "arn:aws:iam::aws:policy/AmazonKinesisFullAccess"
 
   LambdaProxyRole:
-    Type: "AWS::IAM::Role"
+    Type: AWS::IAM::Role
     Properties:
-      Path: "/"
+      Path: /
       RoleName: !Sub ${AWS::StackName}-apigw-lambda-proxy-role
-      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
       - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
       - "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
 
   KinesisStream:
-    Type: "AWS::Kinesis::Stream"
+    Type: AWS::Kinesis::Stream
     Properties:
       Name: !Sub ${AWS::StackName}-kinesis
       RetentionPeriodHours: 24
@@ -278,7 +270,7 @@ Outputs:
   HttpApiUrl:
     Description: URL of your API endpoint
     Value:
-      Fn::Sub: 'https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${StageName}/'
+      Fn::Sub: https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${StageName}/
   HttpApiId:
     Description: Api id of HttpApi
     Value:
