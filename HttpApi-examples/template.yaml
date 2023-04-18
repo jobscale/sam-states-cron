@@ -37,7 +37,7 @@ Resources:
           ENV: !Sub ${Env}
     Metadata:
       Dockerfile: Dockerfile
-      DockerContext: !Sub ${AppPath}/lambda-container
+      DockerContext: !Sub ${AppPath}/appContainer
       DockerTag: !Sub ${Env}
 
   PathLambda:
