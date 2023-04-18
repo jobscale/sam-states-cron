@@ -1,0 +1,12 @@
+{
+  "name": "create-ami",
+  "version": "1.0.0",
+  "description": "i am create-ami",
+  "license": "MIT",
+  "author": "jobscale <jobscale@users.noreply.github.com>",
+  "scripts": {},
+  "dependencies": {
+    "@jobscale/logger": "^0.1.0",
+    "dayjs": "^1.11.7"
+  }
+}

@@ -1,0 +1,64 @@
+service: create-ami
+frameworkVersion: '3'
+provider:
+  name: aws
+  stage: ${opt:stage}
+  region: ap-northeast-1
+  deploymentBucket:
+    name: ${self:custom.bucketName}
+  iam:
+    role:
+      name: ${self:custom.roleName}
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "ec2:describeInstances"
+            - "ec2:createImage"
+            - "ec2:createTags"
+            - "ec2:describeImages"
+            - "ec2:deregisterImage"
+            - "ec2:deleteSnapshot"
+          Resource: "*"
+
+custom:
+  env: ${sls:stage}
+  service: ${self:service}
+  region: ${aws:region}
+  accountId: ${aws:accountId}
+  stackName: ${self:custom.env}-${self:custom.service}-sls
+  functionName: ${self:custom.stackName}
+  eventName: ${self:custom.stackName}
+  roleName: ${self:custom.stackName}
+  bucketName: app-deploy-${self:custom.accountId}
+
+package:
+  patterns:
+    - '!*'
+    - '!**'
+    - '*.js'
+    - 'services/**'
+    - 'node_modules/**'
+
+functions:
+  create-ami:
+    name: ${self:custom.functionName}
+    description: Daily Create AMI
+    handler: app/index.handler
+    runtime: nodejs18.x
+    memorySize: 128
+    timeout: 300
+    environment:
+      ENV: ${self.custom.env}
+      AMI_RETENTION_PERIOD: 2
+    events:
+      - schedule:
+          name: ${self:custom.eventName}
+          description: Daily Create AMI
+          rate: cron(20 17 * * ? *)
+
+resources:
+  Outputs:
+    ServiceExport:
+      Value: 'A Value To Export'
+      Export:
+        Name: ${self:custom.functionName}

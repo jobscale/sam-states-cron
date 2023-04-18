@@ -1,0 +1,16 @@
+{
+  "name": "aws-lambda",
+  "version": "1.0.0",
+  "description": "i am aws-lambda",
+  "license": "MIT",
+  "author": "jobscale <jobscale@users.noreply.github.com>",
+  "scripts": {
+    "lint": "eslint . --fix"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^8.34.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.27.5"
+  }
+}
