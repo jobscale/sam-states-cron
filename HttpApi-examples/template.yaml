@@ -5,8 +5,8 @@ Parameters:
     Type: String
     Default: develop
     AllowedValues:
-      - develop
-      - staging
+    - develop
+    - staging
   AppPath:
     Type: String
     Default: app
@@ -14,8 +14,8 @@ Parameters:
     Type: String
     Default: v1
     AllowedValues:
-      - v1
-      - v2
+    - v1
+    - v2
 
 Mappings:
   EnvMap:
@@ -50,8 +50,8 @@ Resources:
       Timeout: 10
       Runtime: nodejs18.x
       Policies:
-        - DynamoDBCrudPolicy:
-           TableName: !Ref AutoscalingSampleTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref AutoscalingSampleTable
       Tags:
         Env: !Sub ${Env}
       Environment:
@@ -73,8 +73,8 @@ Resources:
         Variables:
           ENV: !Sub ${Env}
       Policies:
-        - KinesisStreamReadPolicy:
-           StreamName: !GetAtt KinesisStream.Arn
+      - KinesisStreamReadPolicy:
+          StreamName: !GetAtt KinesisStream.Arn
       Events:
         Stream:
           Type: Kinesis
@@ -142,14 +142,13 @@ Resources:
       RoleName: !Sub ${AWS::StackName}-http-role
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       Policies:
-        - PolicyName: !Sub ${AWS::StackName}-http-policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource: '*'
+      - PolicyName: !Sub ${AWS::StackName}-http-policy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource: '*'
 
   HttpApiAuthorizer:
     Type: AWS::ApiGatewayV2::Authorizer
@@ -218,8 +217,8 @@ Resources:
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
-      - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
-      - "arn:aws:iam::aws:policy/AmazonKinesisFullAccess"
+      - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      - arn:aws:iam::aws:policy/AmazonKinesisFullAccess
 
   LambdaProxyRole:
     Type: AWS::IAM::Role
@@ -229,8 +228,8 @@ Resources:
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
-      - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
-      - "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+      - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      - arn:aws:iam::aws:policy/AWSLambda_FullAccess
 
   KinesisStream:
     Type: AWS::Kinesis::Stream
@@ -242,8 +241,8 @@ Resources:
         KeyId: alias/aws/kinesis
       ShardCount: 1
       Tags:
-        - Key: Env
-          Value: !Sub ${Env}
+      - Key: Env
+        Value: !Sub ${Env}
 
   AutoscalingSampleTable:
     Type: AWS::DynamoDB::Table
@@ -261,10 +260,8 @@ Resources:
         WriteCapacityUnits: 2
         ReadCapacityUnits: 2
       Tags:
-        - Key: Env
-          Value: !Sub ${Env}
-        - Key: Env2
-          Value: !Sub ${Env}
+      - Key: Env
+        Value: !Sub ${Env}
 
   WriteCapacityScalableTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -320,20 +317,20 @@ Resources:
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"application-autoscaling.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       Policies:
-        - PolicyName: root
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "dynamodb:DescribeTable"
-                  - "dynamodb:UpdateTable"
-                  - "cloudwatch:PutMetricAlarm"
-                  - "cloudwatch:DescribeAlarms"
-                  - "cloudwatch:GetMetricStatistics"
-                  - "cloudwatch:SetAlarmState"
-                  - "cloudwatch:DeleteAlarms"
-                Resource: '*'
+      - PolicyName: root
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - dynamodb:DescribeTable
+            - dynamodb:UpdateTable
+            - cloudwatch:PutMetricAlarm
+            - cloudwatch:DescribeAlarms
+            - cloudwatch:GetMetricStatistics
+            - cloudwatch:SetAlarmState
+            - cloudwatch:DeleteAlarms
+            Resource: '*'
 
   AccessLogs:
     Type: AWS::Logs::LogGroup

@@ -8,8 +8,8 @@ Parameters:
     Type: String
     Default: develop
     AllowedValues:
-      - develop
-      - staging
+    - develop
+    - staging
 
 Resources:
   Function1:
@@ -27,10 +27,9 @@ Resources:
       - AWSLambdaExecute
       - Version: 2012-10-17
         Statement:
-          - Effect: Allow
-            Action:
-              - logs:*
-            Resource: '*'
+        - Effect: Allow
+          Action: logs:*
+          Resource: '*'
 
   Function2:
     Type: AWS::Serverless::Function
@@ -47,33 +46,24 @@ Resources:
       - AWSLambdaExecute
       - Version: 2012-10-17
         Statement:
-          - Effect: Allow
-            Action:
-              - logs:*
-            Resource: '*'
+        - Effect: Allow
+          Action: logs:*
+          Resource: '*'
 
   StateMachineIAMRole:
     Type: AWS::IAM::Role
     Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                  - Fn::Sub: states.${AWS::Region}.amazonaws.com
-            Action:
-              - sts:AssumeRole
+      AssumeRolePolicyDocument: !Sub "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"states.${AWS::Region}.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       Policies:
-        - PolicyName: StatesExecutionPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: lambda:InvokeFunction
-                Resource:
-                  - !GetAtt Function1.Arn
-                  - !GetAtt Function2.Arn
+      - PolicyName: StatesExecutionPolicy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource:
+            - !GetAtt Function1.Arn
+            - !GetAtt Function2.Arn
 
   StateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -174,24 +164,15 @@ Resources:
   ScheduledEventIAMRole:
     Type: AWS::IAM::Role
     Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                  - Fn::Sub: events.amazonaws.com
-            Action:
-              - sts:AssumeRole
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"events.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       Policies:
-        - PolicyName: StateMachineExecutionPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: states:StartExecution
-                Resource:
-                  - !Ref StateMachine
+      - PolicyName: StateMachineExecutionPolicy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action: states:StartExecution
+            Resource: !Ref StateMachine
 
   ScheduledEventRule:
     Type: AWS::Events::Rule
@@ -200,6 +181,6 @@ Resources:
       ScheduleExpression: cron(9 17 * * ? *)
       State: ENABLED
       Targets:
-        - Arn: !Ref StateMachine
-          Id: !GetAtt StateMachine.Name
-          RoleArn: !GetAtt ScheduledEventIAMRole.Arn
+      - Arn: !Ref StateMachine
+        Id: !GetAtt StateMachine.Name
+        RoleArn: !GetAtt ScheduledEventIAMRole.Arn

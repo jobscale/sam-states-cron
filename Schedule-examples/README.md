@@ -2,9 +2,6 @@
 
 ## versions
 
-npm --version
-9.3.1
-
 node --version
 v18.14.0
 
@@ -20,13 +17,11 @@ npm run lint
 ### SAM (Serverless Application Model)
 
 ```bash
-./deploy develop
+./deploy-sam develop
 ```
 
 ### Serverless Framework
 
 ```bash
-cd app
-npm i --omit=dev
-./deploy develop
+./deploy-serverless develop
 ```

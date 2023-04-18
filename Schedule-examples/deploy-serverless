@@ -3,7 +3,16 @@ set -eu
 
 echo Usage: $0 develop
 
+LIST=(
+  app
+)
+
 {
-  npm i --omit=dev
+  for i in ${LIST[@]}
+  do
+    cd $i
+    npm i --omit=dev
+    cd - > /dev/null
+  done
   serverless deploy --stage $1
 } 2>&1 | tee deploy-$(date +%s%3N).log

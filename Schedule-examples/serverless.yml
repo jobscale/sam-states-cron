@@ -1,5 +1,5 @@
 service: create-ami
-frameworkVersion: '3'
+frameworkVersion: 3
 provider:
   name: aws
   stage: ${opt:stage}
@@ -10,15 +10,15 @@ provider:
     role:
       name: ${self:custom.roleName}
       statements:
-        - Effect: "Allow"
-          Action:
-            - "ec2:describeInstances"
-            - "ec2:createImage"
-            - "ec2:createTags"
-            - "ec2:describeImages"
-            - "ec2:deregisterImage"
-            - "ec2:deleteSnapshot"
-          Resource: "*"
+      - Effect: Allow
+        Action:
+        - ec2:describeInstances
+        - ec2:createImage
+        - ec2:createTags
+        - ec2:describeImages
+        - ec2:deregisterImage
+        - ec2:deleteSnapshot
+        Resource: '*'
 
 custom:
   env: ${sls:stage}
@@ -33,11 +33,11 @@ custom:
 
 package:
   patterns:
-    - '!*'
-    - '!**'
-    - '*.js'
-    - 'services/**'
-    - 'node_modules/**'
+  - '!*'
+  - '!**'
+  - '*.js'
+  - 'services/**'
+  - 'node_modules/**'
 
 functions:
   create-ami:
@@ -51,14 +51,14 @@ functions:
       ENV: ${self.custom.env}
       AMI_RETENTION_PERIOD: 2
     events:
-      - schedule:
-          name: ${self:custom.eventName}
-          description: Daily Create AMI
-          rate: cron(20 17 * * ? *)
+    - schedule:
+        name: ${self:custom.eventName}
+        description: Daily Create AMI
+        rate: cron(20 17 * * ? *)
 
 resources:
   Outputs:
     ServiceExport:
-      Value: 'A Value To Export'
+      Value: A Value To Export
       Export:
         Name: ${self:custom.functionName}
