@@ -185,6 +185,7 @@ Resources:
   ScheduledEventRule:
     Type: AWS::Events::Rule
     Properties:
+      Name: !Sub ${AWS::StackName}-ScheduledEventRule
       Description: !Sub ${AWS::StackName} Scheduled event to trigger
       ScheduleExpression: cron(9 17 * * ? *)
       State: ENABLED
