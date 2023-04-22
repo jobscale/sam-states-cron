@@ -3,9 +3,9 @@ version = 0.1
 [develop]
 [develop.deploy]
 [develop.deploy.parameters]
-stack_name = "develop-aws-lambda"
-s3_bucket = "app-deploy-sam"
-s3_prefix = "develop-aws-lambda"
+stack_name = "develop-create-ami"
+s3_prefix = "develop-create-ami"
+s3_bucket = "sam-deploy-bucket"
 region = "ap-northeast-1"
 capabilities = "CAPABILITY_NAMED_IAM"
 image_repositories = []
@@ -14,9 +14,9 @@ parameter_overrides = "StageName=\"v1\" Env=\"develop\""
 [staging]
 [staging.deploy]
 [staging.deploy.parameters]
-stack_name = "staging-aws-lambda"
-s3_bucket = "app-deploy-sam"
-s3_prefix = "staging-aws-lambda"
+stack_name = "staging-create-ami"
+s3_prefix = "staging-create-ami"
+s3_bucket = "sam-deploy-bucket"
 region = "ap-northeast-1"
 capabilities = "CAPABILITY_NAMED_IAM"
 image_repositories = []

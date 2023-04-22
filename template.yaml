@@ -10,14 +10,18 @@ Parameters:
     AllowedValues:
     - develop
     - staging
+  ExportBucket:
+    Type: String
+    Default: cloudwatch-logs-bucket
 
 Resources:
-  Function1:
+  ListGroupsFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-listGroups
       CodeUri: app/listGroups
       Handler: index.handler
+      MemorySize: 128
       Timeout: 10
       Runtime: nodejs18.x
       Environment:
@@ -31,17 +35,19 @@ Resources:
           Action: logs:*
           Resource: '*'
 
-  Function2:
+  ExportGroupFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-exportGroup
       CodeUri: app/exportGroup
       Handler: index.handler
+      MemorySize: 128
       Timeout: 10
       Runtime: nodejs18.x
       Environment:
         Variables:
           ENV: !Sub ${Env}
+          DESTINATION: !Sub ${Env}-${ExportBucket}
       Policies:
       - AWSLambdaExecute
       - Version: 2012-10-17
@@ -53,17 +59,18 @@ Resources:
   StateMachineIAMRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${AWS::StackName}-StateMachineIAMRole
       AssumeRolePolicyDocument: !Sub "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"states.${AWS::Region}.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       Policies:
-      - PolicyName: StatesExecutionPolicy
+      - PolicyName: !Sub ${AWS::StackName}-StatesExecutionPolicy
         PolicyDocument:
           Version: 2012-10-17
           Statement:
           - Effect: Allow
             Action: lambda:InvokeFunction
             Resource:
-            - !GetAtt Function1.Arn
-            - !GetAtt Function2.Arn
+            - !GetAtt ListGroupsFunction.Arn
+            - !GetAtt ExportGroupFunction.Arn
 
   StateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -76,7 +83,7 @@ Resources:
           "States": {
             "List Log Group": {
               "Type": "Task",
-              "Resource": "${Function1Arn}",
+              "Resource": "${ListGroupsFunctionArn}",
               "ResultPath": "$.relation",
               "Next": "Export Log Step"
             },
@@ -102,7 +109,7 @@ Resources:
             },
             "Export Log Step": {
               "Type": "Task",
-              "Resource": "${Function2Arn}",
+              "Resource": "${ExportGroupFunctionArn}",
               "ResultPath": "$.relation",
               "Next": "Check Status"
             },
@@ -158,15 +165,16 @@ Resources:
           }
         }
       DefinitionSubstitutions:
-        Function1Arn: !GetAtt Function1.Arn
-        Function2Arn: !GetAtt Function2.Arn
+        ListGroupsFunctionArn: !GetAtt ListGroupsFunction.Arn
+        ExportGroupFunctionArn: !GetAtt ExportGroupFunction.Arn
 
   ScheduledEventIAMRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${AWS::StackName}-ScheduledEventIAMRole
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"events.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       Policies:
-      - PolicyName: StateMachineExecutionPolicy
+      - PolicyName: !Sub ${AWS::StackName}-StateMachineExecutionPolicy
         PolicyDocument:
           Version: 2012-10-17
           Statement:
@@ -177,7 +185,7 @@ Resources:
   ScheduledEventRule:
     Type: AWS::Events::Rule
     Properties:
-      Description: Scheduled event to trigger Step Functions state machine
+      Description: !Sub ${AWS::StackName} Scheduled event to trigger
       ScheduleExpression: cron(9 17 * * ? *)
       State: ENABLED
       Targets:

@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 
-echo Usage: $0 develop
-
 {
   sam build
-  sam deploy --config-env $1
+  sam deploy --config-env develop
 } 2>&1 | tee deploy-$(date +%s%3N).log

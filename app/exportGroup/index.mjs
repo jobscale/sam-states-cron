@@ -5,7 +5,7 @@ import {
 import dayjs from 'dayjs';
 import localEvent from './event.json' assert { type: 'json' };
 
-const DESTINATION = 'sam-states-cron';
+const { DESTINATION } = process.env;
 const client = new CloudWatchLogsClient();
 
 const describeTask = async relation => {

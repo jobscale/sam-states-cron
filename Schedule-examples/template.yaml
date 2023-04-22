@@ -11,15 +11,15 @@ Parameters:
     - staging
 
 Resources:
-  RoleCreateAMI:
+  CreateAMIRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${Env}-create-ami
+      RoleName: !Sub ${AWS::StackName}-CreateAMIRole
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-      - PolicyName: !Sub ${Env}-create-ami
+      - PolicyName: !Sub ${AWS::StackName}-CreateAMIPolicy
         PolicyDocument:
           Version: 2012-10-17
           Statement:
@@ -39,16 +39,16 @@ Resources:
             - ec2:deleteSnapshot
             Resource: '*'
 
-  CreateAMI:
+  CreateAMIFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${Env}-create-ami
+      FunctionName: !Sub ${AWS::StackName}-create-ami
       Description: Daily Create AMI
       CodeUri: app
       Handler: index.handler
       Timeout: 300
       Runtime: nodejs18.x
-      Role: !GetAtt RoleCreateAMI.Arn
+      Role: !GetAtt CreateAMIRole.Arn
       # Policies:
       # - AWSLambdaExecute
       # - Version: 2012-10-17

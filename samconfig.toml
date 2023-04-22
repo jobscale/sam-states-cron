@@ -4,8 +4,8 @@ version = 0.1
 [default.deploy.parameters]
 stack_name = "sam-states-cron"
 s3_prefix = "sam-states-cron"
-s3_bucket = "app-deploy-bucket"
+s3_bucket = "sam-deploy-bucket"
 region = "ap-northeast-1"
 capabilities = "CAPABILITY_NAMED_IAM"
-parameter_overrides = "StageName=\"v1\" Env=\"develop\""
+parameter_overrides = "StageName=\"v1\" Env=\"develop\" ExportBucket=\"cloudwatch-logs-bucket\""
 image_repositories = []

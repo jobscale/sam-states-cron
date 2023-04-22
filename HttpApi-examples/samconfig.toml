@@ -5,7 +5,7 @@ version = 0.1
 [develop.deploy.parameters]
 stack_name = "develop-app"
 s3_prefix = "develop-app"
-s3_bucket = "app-deploy-bucket"
+s3_bucket = "sam-deploy-bucket"
 region = "ap-northeast-1"
 capabilities = "CAPABILITY_NAMED_IAM"
 parameter_overrides = "StageName=\"v1\" Env=\"develop\""
@@ -16,7 +16,7 @@ image_repositories = []
 [staging.deploy.parameters]
 stack_name = "staging-app"
 s3_prefix = "staging-app"
-s3_bucket = "app-deploy-bucket"
+s3_bucket = "sam-deploy-bucket"
 region = "ap-northeast-1"
 capabilities = "CAPABILITY_NAMED_IAM"
 parameter_overrides = "StageName=\"v1\" Env=\"staging\""

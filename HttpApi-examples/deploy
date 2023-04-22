@@ -4,4 +4,4 @@ set -eu
 {
   sam build
   sam deploy --config-env develop
-}
+} 2>&1 | tee deploy-$(date +%s%3N).log
