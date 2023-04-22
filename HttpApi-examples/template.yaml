@@ -266,7 +266,7 @@ Resources:
   WriteCapacityScalableTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
-      MaxCapacity: 2
+      MaxCapacity: 20
       MinCapacity: 1
       ResourceId: !Join [/, [table, !Ref AutoscalingSampleTable]]
       ScalableDimension: dynamodb:table:WriteCapacityUnits
@@ -289,7 +289,7 @@ Resources:
   ReadCapacityScalableTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
-      MaxCapacity: 2
+      MaxCapacity: 20
       MinCapacity: 1
       ResourceId: !Join [/, [table, !Ref AutoscalingSampleTable]]
       ScalableDimension: dynamodb:table:ReadCapacityUnits
@@ -336,32 +336,32 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /apigateway/${AWS::StackName}-http-accessLog
-      RetentionInDays: 3
+      RetentionInDays: 90
 
   PathLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-path
-      RetentionInDays: 3
+      RetentionInDays: 90
 
   SerialLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-serial
-      RetentionInDays: 3
+      RetentionInDays: 90
 
   AuthLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-auth
-      RetentionInDays: 3
+      RetentionInDays: 90
 
 Outputs:
   HttpApiUrl:
-    Description: URL of your API endpoint
+    Description: !Sub ${AWS::StackName} URL of your API endpoint
     Value:
       Fn::Sub: https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${StageName}/
   HttpApiId:
-    Description: Api id of HttpApi
+    Description: !Sub ${AWS::StackName} Api id of HttpApi
     Value:
       Ref: HttpApi
