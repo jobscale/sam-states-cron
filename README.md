@@ -8,9 +8,8 @@ CloudWatch Logs Export to S3 Buket
 
 ```
 git clone https://github.com/jobscale/sam-states-cron.git
-cd sam-states-cron
-sam build
-sam deploy
+cd sam-states-cron/StepFunction-examples
+./deploy
 ```
 
 ## Licanse

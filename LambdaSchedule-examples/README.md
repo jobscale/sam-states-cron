@@ -1,15 +1,13 @@
-# example
+# Examples
 
 ## versions
 
 node --version
-v18.14.0
+v18.20.0
 
-### Getting source
+### Lint
 
 ```bash
-git clone https://github.com/jobscale/aws-lambda.git
-cd aws-lambda
 npm i
 npm run lint
 ```
@@ -17,7 +15,7 @@ npm run lint
 ### SAM (Serverless Application Model)
 
 ```bash
-./deploy-sam develop
+./deploy
 ```
 
 ### Serverless Framework
