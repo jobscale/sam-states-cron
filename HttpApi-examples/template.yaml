@@ -28,8 +28,11 @@ Resources:
     Properties:
       PackageType: Image
       FunctionName: !Sub ${AWS::StackName}-container
-      MemorySize: 256
-      Timeout: 10
+      MemorySize: 512
+      Timeout: 900
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref AutoscalingSampleTable
       Tags:
         Env: !Sub ${Env}
       Environment:
@@ -52,11 +55,14 @@ Resources:
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref AutoscalingSampleTable
+      - LambdaInvokePolicy:
+          FunctionName: !Ref ContainerLambda
       Tags:
         Env: !Sub ${Env}
       Environment:
         Variables:
           ENV: !Sub ${Env}
+          FunctionName: !Ref ContainerLambda
 
   KinesisLambda:
     Type: AWS::Serverless::Function
