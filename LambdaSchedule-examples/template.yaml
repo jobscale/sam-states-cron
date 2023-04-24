@@ -71,5 +71,5 @@ Resources:
           Type: Schedule
           Properties:
             Name: !Sub ${AWS::StackName}-create-ami
-            Description: !Sub ${AWS::StackName} Daily Create AMI
+            Description: Daily Create AMI
             Schedule: cron(50 17 * * ? *)
