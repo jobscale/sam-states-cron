@@ -3,6 +3,7 @@ ARG FUNCTION_DIR="/var/task"
 FROM node:18-bullseye as build-image
 SHELL ["bash", "-c"]
 
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get install -y \
     g++ \
@@ -20,10 +21,10 @@ RUN npm i aws-lambda-ric && npm i --omit=dev
 FROM node:18-bullseye-slim
 SHELL ["bash", "-c"]
 
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get install -y \
     git curl
-
 RUN rm -fr /var/lib/apt/lists/*
 
 ARG FUNCTION_DIR
