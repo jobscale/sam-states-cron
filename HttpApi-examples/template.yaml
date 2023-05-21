@@ -39,7 +39,7 @@ Resources:
         Variables:
           ENV: !Sub ${Env}
     Metadata:
-      Dockerfile: Dockerfile
+      Dockerfile: Dockerfile-debian
       DockerContext: !Sub ${AppPath}/appContainer
       DockerTag: !Sub ${Env}
 
