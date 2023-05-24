@@ -57,22 +57,9 @@ class AthenaClient {
     const athena = new AthenaQuery({ ...athenaQuery.conf });
 
     const sql = `SELECT
-    guid,
-    COUNT(0) AS count,
-    SUM(score) AS score,
-    MAX(date) AS lastUtteranceDate,
-    word
-  FROM (
-
-  SELECT *, (
-    CASE WHEN attention = TRUE THEN 5 ELSE 1 END
-  ) AS score
-  FROM dev_device_log_db.speech_kds_table
-  WHERE DATE(ts) >= DATE('${ts}')
-
-  ) GROUP BY guid, word
-  ORDER BY score desc
-  LIMIT 30`;
+    *
+    FROM sample_table
+    LIMIT 10`;
 
     return athena.execute(sql)
     .then(execution => {
