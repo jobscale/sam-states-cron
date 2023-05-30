@@ -1,7 +1,7 @@
 version = 0.1
-[default]
-[default.deploy]
-[default.deploy.parameters]
+[develop]
+[develop.deploy]
+[develop.deploy.parameters]
 stack_name = "sam-states-cron"
 s3_prefix = "sam-states-cron"
 s3_bucket = "sam-deploy-bucket"
