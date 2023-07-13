@@ -1,17 +1,10 @@
 Error.stackTraceLimit = 20;
-const { StandardRetryStrategy } = require('@aws-sdk/middleware-retry');
 const {
   DynamoDBClient,
   PutItemCommand,
   GetItemCommand,
-  UpdateItemCommand,
-  DeleteItemCommand,
-  QueryCommand,
-  ScanCommand,
-  ProvisionedThroughputExceededException,
-  DynamoDBClientConfig,
 } = require('@aws-sdk/client-dynamodb');
-const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
+const { marshall } = require('@aws-sdk/util-dynamodb');
 
 const { ENV } = process.env;
 const logger = console;
@@ -20,7 +13,6 @@ const TableName = `${ENV}-app-AutoscalingSample`;
 const maxAttempts = 20;
 const ddb = new DynamoDBClient({ maxAttempts, logger });
 
-const wait = async ms => new Promise(resolve => { setTimeout(resolve, ms); });
 const parse = async text => JSON.parse(
   text[0] === '{' ? text : Buffer.from(text, 'base64').toString(),
 );

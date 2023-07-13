@@ -1,0 +1,21 @@
+
+LIST=(
+  '{"type":"write","prefix":"az","count":500}'
+  '{"type":"write","prefix":"bz","count":500}'
+  '{"type":"write","prefix":"cz","count":500}'
+  '{"type":"write","prefix":"dz","count":500}'
+  '{"type":"write","prefix":"ez","count":500}'
+  '{"type":"write","prefix":"fz","count":500}'
+  '{"type":"write","prefix":"gz","count":500}'
+  '{"type":"write","prefix":"hz","count":500}'
+  '{"type":"write","prefix":"iz","count":500}'
+  '{"type":"write","prefix":"jz","count":500}'
+)
+
+for i in ${LIST[@]}
+do
+  curl -s -X POST -H 'Authorization: ABC123' \
+  https://okh0sg1d74.execute-api.ap-northeast-1.amazonaws.com/v1/path \
+  --data-raw "${i}" | jq .
+  sleep 6
+done
