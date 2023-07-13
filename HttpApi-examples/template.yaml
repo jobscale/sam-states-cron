@@ -107,6 +107,20 @@ Resources:
         Variables:
           ENV: !Sub ${Env}
 
+  DefaultLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-default
+      CodeUri: !Sub ${AppPath}/appDefault
+      Handler: index.handler
+      Timeout: 10
+      Runtime: nodejs18.x
+      Tags:
+        Env: !Sub ${Env}
+      Environment:
+        Variables:
+          ENV: !Sub ${Env}
+
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -212,6 +226,25 @@ Resources:
         Data: $request.body
         StreamName: !Sub ${AWS::StackName}-kinesis
       CredentialsArn: !GetAtt KinesisProxyRole.Arn
+      TimeoutInMillis: 20000
+      PayloadFormatVersion: 1.0
+
+  DefaultLambdaRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: $default
+      Target: !Sub integrations/${DefaultLambdaIntegration}
+
+  DefaultLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      ConnectionType: INTERNET
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${DefaultLambda}/invocations
+      CredentialsArn: !GetAtt LambdaProxyRole.Arn
       TimeoutInMillis: 20000
       PayloadFormatVersion: 1.0
 
