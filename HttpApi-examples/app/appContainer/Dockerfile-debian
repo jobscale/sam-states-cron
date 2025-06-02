@@ -1,9 +1,9 @@
 ARG FUNCTION_DIR="/var/task"
 
-FROM node:20-bookworm as build-image
+FROM node:lts-bookworm AS build-image
 SHELL ["bash", "-c"]
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     g++ make cmake unzip libcurl4-openssl-dev
 
@@ -13,10 +13,10 @@ WORKDIR ${FUNCTION_DIR}
 COPY package.json package.json
 RUN npm i aws-lambda-ric && npm i --omit=dev
 
-FROM node:20-bookworm-slim
+FROM node:lts-bookworm-slim
 SHELL ["bash", "-c"]
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     git curl \
  && apt-get clean && rm -fr /var/lib/apt/lists/*
