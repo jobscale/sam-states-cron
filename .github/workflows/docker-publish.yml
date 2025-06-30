@@ -32,7 +32,7 @@ jobs:
         include:
           - name: regular
             irregular: ''
-            docker_file: Dockerfile
+            docker_file: HttpApi-examples/app/appContainer/Dockerfile
             docker_context: HttpApi-examples/app/appContainer
 
     permissions:
