@@ -1,4 +1,4 @@
-const { Ami } = require('./services/ami');
+import { Ami } from './services/ami.js';
 
 const { AMI_RETENTION_PERIOD } = process.env;
 
@@ -14,6 +14,4 @@ const createAndRemoveAmi = () => {
   .then(mappings => ami.deleteSnapshots(mappings));
 };
 
-module.exports = {
-  createAndRemoveAmi,
-};
+export { createAndRemoveAmi };

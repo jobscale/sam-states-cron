@@ -1,10 +1,10 @@
 Error.stackTraceLimit = 20;
-const {
+import {
   DynamoDBClient,
   PutItemCommand,
   GetItemCommand,
-} = require('@aws-sdk/client-dynamodb');
-const { marshall } = require('@aws-sdk/util-dynamodb');
+} from '@aws-sdk/client-dynamodb';
+import { marshall } from '@aws-sdk/util-dynamodb';
 
 const { ENV } = process.env;
 const logger = console;
@@ -78,24 +78,20 @@ class App {
   }
 }
 
-exports.handler = async event => {
+export const handler = async event => {
   logger.info('EVENT', JSON.stringify(event, null, 2));
 
   return new App().main(event)
-  .then(res => {
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-      body: JSON.stringify(res),
-    };
-  })
-  .catch(e => {
-    return {
-      statusCode: 503,
-      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-      body: JSON.stringify({ type: e.name, error: e.message }),
-    };
-  })
+  .then(res => ({
+    statusCode: 200,
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+    body: JSON.stringify(res),
+  }))
+  .catch(e => ({
+    statusCode: 503,
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+    body: JSON.stringify({ type: e.name, error: e.message }),
+  }))
   .then(response => {
     logger.info('RESPONSE', JSON.stringify(response, null, 2));
     return response;

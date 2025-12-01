@@ -1,9 +1,9 @@
-const {
+import {
   AthenaClient,
   StartQueryExecutionCommand,
   GetQueryExecutionCommand,
   GetQueryResultsCommand,
-} = require('@aws-sdk/client-athena');
+} from '@aws-sdk/client-athena';
 
 const athena = new AthenaClient();
 const logger = console;
@@ -16,7 +16,7 @@ const Default = {
 /**
  * Athena Service Class
  */
-class AthenaQuery {
+export class AthenaQuery {
   constructor(conf) {
     this.setConf(conf);
   }
@@ -141,7 +141,4 @@ class AthenaQuery {
   }
 }
 
-module.exports = {
-  AthenaQuery,
-  athenaQuery: new AthenaQuery(),
-};
+export const athenaQuery = new AthenaQuery();

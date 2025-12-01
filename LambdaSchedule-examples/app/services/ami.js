@@ -1,6 +1,6 @@
-const { EC2 } = require('@aws-sdk/client-ec2');
-const dayjs = require('dayjs');
-const { logger } = require('@jobscale/logger');
+import { EC2 } from '@aws-sdk/client-ec2';
+import dayjs from 'dayjs';
+import { logger } from '@jobscale/logger';
 
 const ec2 = new EC2();
 class Ami {
@@ -18,12 +18,10 @@ class Ami {
     .then(data => {
       if (!data.Reservations.length) return [];
       return data.Reservations
-      .map(reservation => {
-        return reservation.Instances.map(instance => ({
-          InstanceId: instance.InstanceId,
-          Tags: instance.Tags,
-        }));
-      })
+      .map(reservation => reservation.Instances.map(instance => ({
+        InstanceId: instance.InstanceId,
+        Tags: instance.Tags,
+      })))
       .reduce((previousValue, currentValue) => previousValue.concat(currentValue));
     });
   }
@@ -48,12 +46,12 @@ class Ami {
     }))
     .then(images => {
       logger.info('createImages', JSON.stringify(images, null, 2));
-      return Promise.all(images.map(([name, params]) => {
+      return Promise.all(images.map(([name, params]) =>
         // createImage
         // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#createImage-property
-        return ec2.createImage(params)
-        .then(image => this.createTags({ ...image, name }));
-      }));
+        ec2.createImage(params)
+        .then(image => this.createTags({ ...image, name })),
+      ));
     });
   }
 
@@ -92,17 +90,15 @@ class Ami {
       const expirationDate = dayjs().subtract(retentionPeriod, 'days');
       return Images.filter(image => dayjs(image.CreationDate) < expirationDate);
     })
-    .then(expired => {
-      return expired.map(image => ({
-        ImageId: image.ImageId,
-        CreationDate: image.CreationDate,
-        BlockDeviceMappings: image.BlockDeviceMappings
-        .filter(mapping => mapping.Ebs)
-        .map(mapping => ({
-          Ebs: { SnapshotId: mapping.Ebs.SnapshotId },
-        })),
-      }));
-    });
+    .then(expired => expired.map(image => ({
+      ImageId: image.ImageId,
+      CreationDate: image.CreationDate,
+      BlockDeviceMappings: image.BlockDeviceMappings
+      .filter(mapping => mapping.Ebs)
+      .map(mapping => ({
+        Ebs: { SnapshotId: mapping.Ebs.SnapshotId },
+      })),
+    })));
   }
 
   /**
@@ -120,9 +116,7 @@ class Ami {
       // http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/EC2.html#describeImages-property
       return ec2.deregisterImage(params);
     }))
-    .then(() => {
-      return images.map(image => image.BlockDeviceMappings).flat();
-    });
+    .then(() => images.map(image => image.BlockDeviceMappings).flat());
   }
 
   /**
@@ -145,6 +139,4 @@ class Ami {
   }
 }
 
-module.exports = {
-  Ami,
-};
+export { Ami };

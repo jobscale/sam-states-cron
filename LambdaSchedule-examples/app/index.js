@@ -1,15 +1,14 @@
-const { logger } = require('@jobscale/logger');
-const { createAndRemoveAmi } = require('./createAndRemoveAmi');
+import fs from 'fs';
+import { logger } from '@jobscale/logger';
+import { createAndRemoveAmi } from './createAndRemoveAmi.js';
 
-exports.handler = async event => {
+export const handler = async event => {
   logger.info('EVENT', JSON.stringify(event, null, 2));
   return createAndRemoveAmi()
-  .then(response => {
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ response }),
-    };
-  })
+  .then(response => ({
+    statusCode: 200,
+    body: JSON.stringify({ response }),
+  }))
   .catch(e => {
     logger.error(e);
     return {
@@ -20,8 +19,8 @@ exports.handler = async event => {
 };
 
 if (process.env.NODE_LOCAL) {
-  const loader = require;
-  module.exports.handler(loader('./event.json'))
+  const localEvent = JSON.parse(fs.readFileSync('./event.json', 'utf-8'));
+  handler(localEvent)
   .catch(e => logger.error(e))
   .then(response => {
     logger.info('RESPONSE', JSON.stringify(response, null, 2));

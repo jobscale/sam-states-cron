@@ -1,0 +1,29 @@
+{
+  "name": "sam-states-cron",
+  "version": "0.0.1",
+  "description": "CloudWatch Logs Export to S3 Buket",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jobscale/sam-states-cron.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jobscale/sam-states-cron/issues"
+  },
+  "homepage": "https://github.com/jobscale/sam-states-cron#readme",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint",
+    "pretest": "date -Iseconds",
+    "posttest": "npm run lint",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@jobscale/eslint-plugin-standard": "^0.0.8",
+    "eslint": "^9.39.1",
+    "eslint-plugin-jest": "^29.2.1"
+  }
+}

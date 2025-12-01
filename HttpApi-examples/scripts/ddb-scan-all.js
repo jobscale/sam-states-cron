@@ -1,5 +1,5 @@
-const { DynamoDBClient, ScanCommand } = require('@aws-sdk/client-dynamodb');
-const { unmarshall } = require('@aws-sdk/util-dynamodb');
+import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
+import { unmarshall } from '@aws-sdk/util-dynamodb';
 
 const logger = console;
 const TableName = 'develop-app-AutoscalingSample';
@@ -32,6 +32,4 @@ const getAll = async () => {
 
 getAll();
 
-module.exports = {
-  getAll,
-};
+export { getAll };

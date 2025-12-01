@@ -1,4 +1,4 @@
-const { EC2 } = require('@aws-sdk/client-ec2');
+import { EC2 } from '@aws-sdk/client-ec2';
 
 const { env, cloudwatchClient, _ } = process;
 const EC2_NAMESPACE = 'AWS/EC2';
@@ -7,7 +7,7 @@ const REPEAT_PREVIOUS = '...';
 const NAME_TAG = 'Name';
 const METRIC_WIDGET_TYPE = 'metric';
 
-class Dashboard {
+export class Dashboard {
   async parse(text) {
     return JSON.parse(text);
   }
@@ -108,7 +108,3 @@ class Dashboard {
     }
   }
 }
-
-module.exports = {
-  Dashboard,
-};

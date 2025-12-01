@@ -1,16 +1,17 @@
+import fs from 'fs';
 import logger from '@jobscale/logger';
 import {
   CloudWatchLogsClient, CreateExportTaskCommand, DescribeExportTasksCommand,
-} from "@aws-sdk/client-cloudwatch-logs";
+} from '@aws-sdk/client-cloudwatch-logs';
 import dayjs from 'dayjs';
-import localEvent from './event.json' assert { type: 'json' };
 
 const { DESTINATION } = process.env;
+const localEvent = JSON.parse(fs.readFileSync('./event.json', 'utf-8'));
 const client = new CloudWatchLogsClient();
 
 const describeTask = async relation => {
   const command = new DescribeExportTasksCommand({ taskId: relation.taskId });
-  return await client.send(command)
+  return client.send(command)
   .then(data => {
     const [{ status: { code: statusText } }] = data.exportTasks;
     relation.statusText = statusText;
@@ -50,7 +51,7 @@ const createTask = async relation => {
     to: dayjs(to).valueOf(),
   };
   const command = new CreateExportTaskCommand(params);
-  return await client.send(command)
+  return client.send(command)
   .then(data => {
     relation.list.shift();
     return {
@@ -100,12 +101,10 @@ const controlTask = async relation => {
 export const handler = async event => {
   logger.info('EVENT', JSON.stringify(event, null, 2));
   const result = await controlTask(event.relation)
-  .then(relation => {
-    return {
-      ...relation,
-      ts: dayjs().add(9, 'hours').toISOString().replace('Z', '+0900'),
-    };
-  })
+  .then(relation => ({
+    ...relation,
+    ts: dayjs().add(9, 'hours').toISOString().replace('Z', '+0900'),
+  }))
   .catch(e => {
     logger.error(e);
     return {
@@ -113,7 +112,7 @@ export const handler = async event => {
       statusText: 'FAILED',
     };
   });
-  logger.info("RESULT", JSON.stringify(result, null, 2));
+  logger.info('RESULT', JSON.stringify(result, null, 2));
   return result;
 };
 

@@ -1,5 +1,5 @@
 const logger = console;
-exports.handler = async event => {
+export const handler = async event => {
   logger.info('EVENT', JSON.stringify(event, null, 2));
   const [token] = event.identitySource;
   const response = {

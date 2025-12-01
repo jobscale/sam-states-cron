@@ -3,8 +3,8 @@ ARG FUNCTION_DIR="/var/task"
 FROM node:lts-bookworm AS build-image
 SHELL ["bash", "-c"]
 
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -y \
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ make cmake unzip libcurl4-openssl-dev
 
 ARG FUNCTION_DIR
@@ -16,8 +16,8 @@ RUN npm i aws-lambda-ric && npm i --omit=dev
 FROM node:lts-bookworm-slim
 SHELL ["bash", "-c"]
 
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -y \
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl \
  && apt-get clean && rm -fr /var/lib/apt/lists/*
 

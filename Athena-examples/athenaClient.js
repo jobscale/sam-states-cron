@@ -1,9 +1,9 @@
-const { AthenaQuery, athenaQuery } = require('./athenaQuery');
+import { AthenaQuery, athenaQuery } from './athenaQuery.js';
 
 /**
  * Athena Search Service
  */
-class AthenaClient {
+export class AthenaClient {
   /**
    * 条件を追加
    * @param {Object} and 条件
@@ -59,6 +59,7 @@ class AthenaClient {
     const sql = `SELECT
     *
     FROM sample_table
+    WHERE ts = ${ts}
     LIMIT 10`;
 
     return athena.execute(sql)
@@ -71,7 +72,4 @@ class AthenaClient {
   }
 }
 
-module.exports = {
-  AthenaClient,
-  athenaClient: new AthenaClient(),
-};
+export const athenaClient = new AthenaClient();

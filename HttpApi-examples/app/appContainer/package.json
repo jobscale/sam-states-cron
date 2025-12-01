@@ -2,9 +2,10 @@
   "name": "lambda",
   "version": "1.0.0",
   "description": "lambda node18.x",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["lambda", "node18.x"],
